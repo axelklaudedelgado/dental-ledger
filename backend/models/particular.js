@@ -14,10 +14,6 @@ Particular.init({
     type: DataTypes.STRING,
     allowNull: false,
   },
-  unitPrice: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: true, 
-  },
   type: {
     type: DataTypes.ENUM('Service', 'Payment'), 
     allowNull: false,
