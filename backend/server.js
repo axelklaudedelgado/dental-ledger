@@ -1,8 +1,10 @@
 const express = require('express');
 
+require('express-async-errors');
 const app = express();
 
 const { connectToDatabase } = require('./utils/db');
+const middleware = require('./utils/middleware.js');
 const config = require('./utils/config.js'); 
 
 const clientRouter = require('./routes/clients.js');
@@ -14,6 +16,9 @@ app.use(express.json());
 app.use('/api/clients', clientRouter);
 app.use('/api/transactions', transactionRouter);
 app.use('/api/particulars', particularRouter);
+
+app.use(middleware.unknownEndpoint);
+app.use(middleware.errorHandler);
 
 const start = async () => {
   await connectToDatabase();
