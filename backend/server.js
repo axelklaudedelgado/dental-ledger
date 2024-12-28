@@ -1,6 +1,7 @@
 const express = require('express');
 
 require('express-async-errors');
+const cors = require('cors');
 const app = express();
 
 const { connectToDatabase } = require('./utils/db');
@@ -11,6 +12,7 @@ const clientRouter = require('./routes/clients.js');
 const transactionRouter = require('./routes/transactions.js');
 const particularRouter = require('./routes/particulars.js');
 
+app.use(cors({ origin: 'http://localhost:5173' }))
 app.use(express.json());
 
 app.use('/api/clients', clientRouter);
