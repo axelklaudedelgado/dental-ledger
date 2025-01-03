@@ -17,6 +17,7 @@ TransactionParticular.init({
       model: "Transactions",
       key: "id",
     },
+    onDelete: 'CASCADE',
   },
   particularId: {
     type: DataTypes.INTEGER,
@@ -25,6 +26,7 @@ TransactionParticular.init({
       model: "Particulars",
       key: "id",
     },
+    onDelete: 'CASCADE',
   },
   units: {
     type: DataTypes.INTEGER,

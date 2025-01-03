@@ -3,7 +3,8 @@ const Transaction = require('./transaction');
 const Particular = require('./particular');
 const transactionParticular = require('./transactionParticular');
 
-Client.hasMany(Transaction);
+Client.hasMany(Transaction, {onDelete: 'CASCADE'});
+
 Transaction.belongsTo(Client);
 
 Transaction.belongsToMany(Particular, { through: transactionParticular });
