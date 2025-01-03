@@ -29,7 +29,7 @@ Client.init({
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM('Pending', 'Paid', 'New'), 
+    type: DataTypes.ENUM('Unpaid', 'Paid', 'New'), 
     allowNull: false,
     defaultValue: 'New',
   },
