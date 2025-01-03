@@ -189,7 +189,7 @@ router.post("/", async (req, res, next) => {
         ? allTransactions.length > 0
           ? "Paid"
           : "New"
-        : "Pending";
+        : "Unpaid";
 
     await client.update(
       {
