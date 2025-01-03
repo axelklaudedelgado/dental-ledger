@@ -18,6 +18,21 @@ Client.init({
     type: DataTypes.STRING,
     allowNull: false,
   },
+  totalBalance: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: false,
+    defaultValue: 0,
+  },
+  lastTransactionDate: {
+    type: DataTypes.STRING,
+    defaultValue: 'No Transactions Yet',
+    allowNull: false,
+  },
+  status: {
+    type: DataTypes.ENUM('Pending', 'Paid', 'New'), 
+    allowNull: false,
+    defaultValue: 'New',
+  },
 }, {
   sequelize,
   underscored: true,
