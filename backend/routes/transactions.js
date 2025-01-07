@@ -1,225 +1,239 @@
 const router = require('express').Router()
-const { sequelize } = require('../utils/db');
-const { Transaction, Particular, transactionParticular, Client } = require("../models");
+const { sequelize } = require('../utils/db')
+const {
+	Transaction,
+	Particular,
+	transactionParticular,
+	Client,
+} = require('../models')
 
 router.get('/', async (req, res) => {
-    const transactions = await Transaction.findAll({
-        include: [
-        {
-            model: Client,
-            attributes: ['id', 'name'], 
-        },
-        {
-            model: Particular,
-            through: {
-                attributes: ["units", "unitPrice"], 
-            },
-        },
-        ],
-    });
-    res.status(200).json(transactions);
-});
+	const transactions = await Transaction.findAll({
+		include: [
+			{
+				model: Client,
+				attributes: ['id', 'name'],
+			},
+			{
+				model: Particular,
+				through: {
+					attributes: ['units', 'unitPrice'],
+				},
+			},
+		],
+	})
+	res.status(200).json(transactions)
+})
 
-router.get("/:id", async (req, res) => {
-    const { id } = req.params;
+router.get('/:id', async (req, res) => {
+	const { id } = req.params
 
-    const transaction = await Transaction.findByPk(id, {
-      include: {
-        model: Particular,
-        through: {
-          attributes: ["units", "unitPrice"],
-        },
-      },
-    });
+	const transaction = await Transaction.findByPk(id, {
+		include: {
+			model: Particular,
+			through: {
+				attributes: ['units', 'unitPrice'],
+			},
+		},
+	})
 
-    if (!transaction) {
-      return res.status(404).json({ error: "Transaction not found." });
-    }
+	if (!transaction) {
+		return res.status(404).json({ error: 'Transaction not found.' })
+	}
 
-    let totalAmount = 0;
-    let totalPayments = 0;
+	let totalAmount = 0
+	let totalPayments = 0
 
-    const particulars = transaction.particulars.map((particular) => {
-      const { units, unitPrice } = particular.transactionParticular;
-      const isPayment = particular.type === "Payment";
+	const particulars = transaction.particulars.map((particular) => {
+		const { units, unitPrice } = particular.transactionParticular
+		const isPayment = particular.type === 'Payment'
 
-      if (!isPayment) {
-        totalAmount += units * unitPrice;
-      } else {
-        totalPayments += unitPrice;
-      }
+		if (!isPayment) {
+			totalAmount += units * unitPrice
+		} else {
+			totalPayments += unitPrice
+		}
 
-      return {
-        name: particular.name,
-        units,
-        unitPrice,
-        amount: isPayment ? 0 : units * unitPrice,
-      };
-    });
+		return {
+			name: particular.name,
+			units,
+			unitPrice,
+			amount: isPayment ? 0 : units * unitPrice,
+		}
+	})
 
-    const balance = Math.max(totalAmount - totalPayments,0);
+	const balance = Math.max(totalAmount - totalPayments, 0)
 
-    res.json({
-      transaction: {
-        ...transaction.toJSON(),
-        particulars,
-        totalAmount,
-        totalPayments,
-        balance,
-      },
-    });
-});
+	res.json({
+		transaction: {
+			...transaction.toJSON(),
+			particulars,
+			totalAmount,
+			totalPayments,
+			balance,
+		},
+	})
+})
 
+router.post('/', async (req, res) => {
+	const { clientId, particulars, date, remarks } = req.body
 
-router.post("/", async (req, res, next) => {
-  const { clientId, particulars, date, remarks } = req.body;
+	if (!clientId || !Array.isArray(particulars) || particulars.length === 0) {
+		return res
+			.status(400)
+			.json({ error: 'Client ID and particulars are required.' })
+	}
 
-  if (!clientId || !Array.isArray(particulars) || particulars.length === 0) {
-    return res.status(400).json({ error: "Client ID and particulars are required." });
-  }
+	const t = await sequelize.transaction()
 
-  const t = await sequelize.transaction();
+	try {
+		const client = await Client.findByPk(clientId, {
+			transaction: t,
+			lock: t.LOCK.UPDATE,
+		})
 
-  try {
-    const client = await Client.findByPk(clientId, {
-      transaction: t,
-      lock: t.LOCK.UPDATE, 
-    });
+		if (!client) {
+			throw new Error('Client not found.')
+		}
 
-    if (!client) {
-      throw new Error("Client not found.");
-    } 
+		const currentClientTotalBalance = client.totalBalance
 
-    const currentClientTotalBalance = client.totalBalance;
+		const isPaymentOnly = particulars.every(
+			(particular) => particular.particularId === 15,
+		)
 
-    const isPaymentOnly = particulars.every((particular) => particular.particularId === 15);
+		if (isPaymentOnly) {
+			const totalPayment = particulars.reduce((sum, particular) => {
+				return sum + parseFloat(particular.unitPrice)
+			}, 0)
 
-    if (isPaymentOnly) {
-      const totalPayment = particulars.reduce((sum, particular) => {
-        return sum + parseFloat(particular.unitPrice);
-      }, 0);
-    
-      console.log("Total Payment:", totalPayment);
-    
+			console.log('Total Payment:', totalPayment)
 
-      if (currentClientTotalBalance <= 0) {
-        throw new Error(
-          "Cannot create a payment-only transaction when there is no outstanding balance."
-        );
-      }
-    
-      if (totalPayment > currentClientTotalBalance) {
-        throw new Error(
-          `Payment amount cannot exceed the current outstanding balance of ${currentClientTotalBalance}.`
-        );
-      }
-    }
+			if (currentClientTotalBalance <= 0) {
+				throw new Error(
+					'Cannot create a payment-only transaction when there is no outstanding balance.',
+				)
+			}
 
-    const joNumber = await Transaction.generateJONumber();
+			if (totalPayment > currentClientTotalBalance) {
+				throw new Error(
+					`Payment amount cannot exceed the current outstanding balance of ${currentClientTotalBalance}.`,
+				)
+			}
+		}
 
-    const newTransaction = await Transaction.create(
-      {
-        clientId,
-        joNumber,
-        date: date || new Date(),
-        remarks: remarks || null,
-      },
-      { transaction: t } 
-    );
+		const joNumber = await Transaction.generateJONumber()
 
-    const transactionParticulars = await Promise.all(
-      particulars.map(async (particular) => {
-        const { particularId, units = 0, unitPrice } = particular;
+		const newTransaction = await Transaction.create(
+			{
+				clientId,
+				joNumber,
+				date: date || new Date(),
+				remarks: remarks || null,
+			},
+			{ transaction: t },
+		)
 
-        const existingParticular = await Particular.findByPk(particularId, { transaction: t });
-        if (!existingParticular) {
-          throw new Error(`Particular with ID ${particularId} not found.`);
-        }
+		const transactionParticulars = await Promise.all(
+			particulars.map(async (particular) => {
+				const { particularId, units = 0, unitPrice } = particular
 
-        return transactionParticular.create(
-          {
-            transactionId: newTransaction.id,
-            particularId,
-            units,
-            unitPrice,
-          },
-          { transaction: t }
-        );
-      })
-    );
+				const existingParticular = await Particular.findByPk(
+					particularId,
+					{ transaction: t },
+				)
+				if (!existingParticular) {
+					throw new Error(
+						`Particular with ID ${particularId} not found.`,
+					)
+				}
 
-    const allTransactions = await Transaction.findAll({
-      where: { clientId },
-      include: {
-        model: Particular,
-        through: { attributes: ["units", "unitPrice"] },
-      },
-      transaction: t,
-    });
+				return transactionParticular.create(
+					{
+						transactionId: newTransaction.id,
+						particularId,
+						units,
+						unitPrice,
+					},
+					{ transaction: t },
+				)
+			}),
+		)
 
-    let grossBalance = 0;
-    let totalPayments = 0;
-    let lastTransactionDate = null;
+		const allTransactions = await Transaction.findAll({
+			where: { clientId },
+			include: {
+				model: Particular,
+				through: { attributes: ['units', 'unitPrice'] },
+			},
+			transaction: t,
+		})
 
-    allTransactions.forEach((transaction) => {
-      let transactionAmount = 0;
-      let transactionPayments = 0;
+		let grossBalance = 0
+		let totalPayments = 0
+		let lastTransactionDate = null
 
-      transaction.particulars.forEach((particular) => {
-        const { units, unitPrice } = particular.transactionParticular;
-        if (particular.type === "Payment") {
-          transactionPayments += parseFloat(unitPrice) || 0;
-        } else {
-          transactionAmount += units * unitPrice;
-        }
-      });
+		allTransactions.forEach((transaction) => {
+			let transactionAmount = 0
+			let transactionPayments = 0
 
-      grossBalance += transactionAmount;
-      totalPayments += transactionPayments;
+			transaction.particulars.forEach((particular) => {
+				const { units, unitPrice } = particular.transactionParticular
+				if (particular.type === 'Payment') {
+					transactionPayments += parseFloat(unitPrice) || 0
+				} else {
+					transactionAmount += units * unitPrice
+				}
+			})
 
-      if (!lastTransactionDate || new Date(transaction.date) > new Date(lastTransactionDate)) {
-        lastTransactionDate = transaction.date;
-      }
-    });
+			grossBalance += transactionAmount
+			totalPayments += transactionPayments
 
-    const totalBalance = Math.max(grossBalance - totalPayments, 0);
+			if (
+				!lastTransactionDate ||
+				new Date(transaction.date) > new Date(lastTransactionDate)
+			) {
+				lastTransactionDate = transaction.date
+			}
+		})
 
-    const status =
-      totalBalance === 0
-        ? allTransactions.length > 0
-          ? "Paid"
-          : "New"
-        : "Unpaid";
+		const totalBalance = Math.max(grossBalance - totalPayments, 0)
 
-    await client.update(
-      {
-        totalBalance,
-        lastTransactionDate: lastTransactionDate || "No Transactions Yet",
-        status,
-      },
-      { transaction: t }
-    );
+		const status =
+			totalBalance === 0
+				? allTransactions.length > 0
+					? 'Paid'
+					: 'New'
+				: 'Unpaid'
 
-    await t.commit(); 
+		await client.update(
+			{
+				totalBalance,
+				lastTransactionDate:
+					lastTransactionDate || 'No Transactions Yet',
+				status,
+			},
+			{ transaction: t },
+		)
 
-    res.status(201).json({
-      message: "Transaction created successfully.",
-      transaction: {
-        ...newTransaction.toJSON(),
-        particulars: transactionParticulars,
-      },
-    });
-  } catch (error) {
-    await t.rollback(); 
-    res.status(500).json({ error: error.message });
-  }
-});
+		await t.commit()
 
+		res.status(201).json({
+			message: 'Transaction created successfully.',
+			transaction: {
+				...newTransaction.toJSON(),
+				particulars: transactionParticulars,
+			},
+		})
+	} catch (error) {
+		await t.rollback()
+		res.status(500).json({ error: error.message })
+	}
+})
 
 router.delete('/:id', async (req, res) => {
-  await Transaction.destroy({ where: { id: req.params.id } });
-  res.json({ message: 'Transaction deleted' });
-});
+	await Transaction.destroy({ where: { id: req.params.id } })
+	res.json({ message: 'Transaction deleted' })
+})
 
-
-module.exports = router;
+module.exports = router
