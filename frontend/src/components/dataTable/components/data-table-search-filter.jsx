@@ -1,14 +1,23 @@
 import { InputWithClear } from "../../ui/extensions/input-with-clear";
+import { ClientFilter } from "./client-status-filter";
 
-export function Search ({ table, ...props }) {
+export function Search({ table, clientFilter = false, ...props }) {
   const filterValue = table.getState().globalFilter || "";
 
   return (
-    <InputWithClear
-      value={filterValue}
-      onChange={event => table.setGlobalFilter(String(event.target.value))}
-      className="max-w-sm"
-      {...props}
-    />
+    <div className={`flex items-center gap-3 px-3 ${clientFilter ? "w-full" : "max-w-sm"}`}>
+      {clientFilter && (
+        <InputWithClear
+        value={filterValue}
+        onChange={(event) => table.setGlobalFilter(String(event.target.value))}
+        className="flex-grow"
+        {...props}
+        />
+      )}
+      <ClientFilter
+        table={table}
+        className="flex-shrink-0"
+      />
+    </div>
   );
 }
