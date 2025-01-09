@@ -11,7 +11,7 @@ const lastTransactionSort = (rowA, rowB, columnId) => {
 	return new Date(valueA) - new Date(valueB)
 }
 
-export const columns = [
+export const clientColumns = [
 	{
 		accessorKey: 'status',
 		header: 'Status',

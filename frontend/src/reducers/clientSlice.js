@@ -9,23 +9,23 @@ export const fetchClients = createAsyncThunk('clients/fetchAll', async () => {
 const clientSlice = createSlice({
 	name: 'clients',
 	initialState: {
-		items: [],
-		status: 'idle',
-		error: null,
+		clients: [],
+		clientsStatus: 'idle',
+		clientsError: null,
 	},
 	reducers: {},
 	extraReducers: (builder) => {
 		builder
 			.addCase(fetchClients.pending, (state) => {
-				state.status = 'loading'
+				state.clientsStatus = 'loading'
 			})
 			.addCase(fetchClients.fulfilled, (state, action) => {
-				state.status = 'succeeded'
-				state.items = action.payload
+				state.clientsStatus = 'succeeded'
+				state.clients = action.payload
 			})
 			.addCase(fetchClients.rejected, (state, action) => {
-				state.status = 'failed'
-				state.error = action.error.message
+				state.clientsStatus = 'failed'
+				state.clientsError = action.error.message
 			})
 	},
 })

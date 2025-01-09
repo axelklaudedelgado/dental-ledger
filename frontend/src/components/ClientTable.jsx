@@ -1,9 +1,9 @@
 import { DataTable } from './dataTable/data-table'
-import { columns } from './dataTable/columns/clientColumns'
+import { clientColumns } from './dataTable/columns/clientColumns'
 
 export const ClientTable = ({ data, status, error }) => (
 	<DataTable
-		columns={columns}
+		columns={clientColumns}
 		data={data}
 		isLoading={status === 'loading'}
 		error={status === 'failed' ? error : null}
