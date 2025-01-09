@@ -7,18 +7,18 @@ export function Search({ table, clientFilter = false, ...props }) {
 	return (
 		<div
 			className={`flex items-center gap-3 px-3 ${clientFilter ? 'w-full' : 'max-w-sm'}`}
-		>
+		>	
+			<InputWithClear
+				value={filterValue}
+				onChange={(event) =>
+					table.setGlobalFilter(String(event.target.value))
+				}
+				className="flex-grow"
+				{...props}
+			/>
 			{clientFilter && (
-				<InputWithClear
-					value={filterValue}
-					onChange={(event) =>
-						table.setGlobalFilter(String(event.target.value))
-					}
-					className="flex-grow"
-					{...props}
-				/>
+				<ClientFilter table={table} className="flex-shrink-0" />
 			)}
-			<ClientFilter table={table} className="flex-shrink-0" />
 		</div>
 	)
 }
