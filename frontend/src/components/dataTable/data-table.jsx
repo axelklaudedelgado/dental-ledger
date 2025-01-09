@@ -23,7 +23,7 @@ import {
 
 import { Spinner } from '../ui/extensions/spinner'
 
-export function DataTable({ columns, data, isLoading, error }) {
+export function DataTable({ columns, data, isLoading, error, type = null }) {
 	const [sorting, setSorting] = React.useState([])
 	const [columnFilters, setColumnFilters] = React.useState([])
 	const [columnVisibility, setColumnVisibility] = React.useState({})
@@ -54,7 +54,7 @@ export function DataTable({ columns, data, isLoading, error }) {
 				<Search
 					table={table}
 					placeholder="Search..."
-					clientFilter={true}
+					clientFilter={type === 'clients'}
 				/>
 				<DataTableViewOptions table={table} />
 			</div>

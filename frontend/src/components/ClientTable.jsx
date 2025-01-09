@@ -7,5 +7,6 @@ export const ClientTable = ({ data, status, error }) => (
 		data={data}
 		isLoading={status === 'loading'}
 		error={status === 'failed' ? error : null}
+		type="clients"
 	/>
 )
