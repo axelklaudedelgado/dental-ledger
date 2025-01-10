@@ -1,11 +1,11 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom'
 
 function Wrapper() {
 	return (
 		<div className="container mx-auto py-10">
-			<Outlet /> 
+			<Outlet />
 		</div>
-	);
+	)
 }
 
-export default Wrapper;
+export default Wrapper

@@ -22,13 +22,21 @@ function App() {
 	return (
 		<Router>
 			<Routes>
-				<Route element={< Wrapper />}>
-					<Route path="/" element={<ClientTable
-												data={clients}
-												status={clientsStatus}
-												error={clientsError}
-											/>} />
-					<Route path="/clients/:id" element={< ClientTransactions />} />
+				<Route element={<Wrapper />}>
+					<Route
+						path="/"
+						element={
+							<ClientTable
+								data={clients}
+								status={clientsStatus}
+								error={clientsError}
+							/>
+						}
+					/>
+					<Route
+						path="/clients/:id"
+						element={<ClientTransactions />}
+					/>
 				</Route>
 			</Routes>
 		</Router>

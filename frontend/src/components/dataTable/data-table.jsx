@@ -109,7 +109,9 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 										row.getIsSelected() && 'selected'
 									}
 									className="cursor-pointer"
-									onClick={() => navigate(`/${type}/${row.original.id}`)}
+									onClick={() =>
+										navigate(`/${type}/${row.original.id}`)
+									}
 								>
 									{row.getVisibleCells().map((cell) => (
 										<TableCell key={cell.id}>
