@@ -6,12 +6,14 @@ export const transactionColumns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Job Order #" />
 		),
+		sortDescFirst: false,
 	},
 	{
 		accessorKey: 'date',
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Date" />
 		),
+		sortDescFirst: false,
 	},
 	{
 		accessorKey: 'particulars',
@@ -25,6 +27,7 @@ export const transactionColumns = [
 				))}
 			</div>
 		),
+		sortDescFirst: false,
 	},
 	{
 		accessorKey: 'unitPrices',
@@ -43,6 +46,7 @@ export const transactionColumns = [
 				))}
 			</div>
 		),
+		sortDescFirst: false,
 	},
 	{
 		accessorKey: 'amount',
@@ -57,6 +61,7 @@ export const transactionColumns = [
 				}).format(row.original.amount)}
 			</div>
 		),
+		sortDescFirst: false,
 	},
 	{
 		accessorKey: 'payment',
@@ -71,6 +76,7 @@ export const transactionColumns = [
 				}).format(row.original.payment)}
 			</div>
 		),
+		sortDescFirst: false,
 	},
 	{
 		accessorKey: 'balance',
@@ -85,6 +91,7 @@ export const transactionColumns = [
 				}).format(row.original.balance)}
 			</div>
 		),
+		sortDescFirst: false,
 	},
 	{
 		accessorKey: 'remarks',
