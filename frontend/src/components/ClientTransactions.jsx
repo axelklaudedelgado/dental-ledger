@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchClientDetails } from '../reducers/clientSlice'
 import { TransactionTable } from './TransactionTable'
+import BackButton from './BackButton'
 
 export const ClientTransactions = () => {
 	const { id } = useParams()
@@ -17,6 +18,7 @@ export const ClientTransactions = () => {
 
 	return (
 		<div>
+			<BackButton />
 			<h1 className="text-4xl font-bold">Statement of Account</h1>
 			{selectedClient ? (
 				<>
