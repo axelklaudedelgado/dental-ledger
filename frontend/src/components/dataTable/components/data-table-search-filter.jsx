@@ -6,7 +6,7 @@ export function Search({ table, clientFilter = false, ...props }) {
 
 	return (
 		<div
-			className={`flex items-center gap-3 px-3 ${clientFilter ? 'w-full' : 'max-w-sm'}`}
+			className={`flex items-center gap-3 ${clientFilter ? 'w-full' : 'max-w-sm'}`}
 		>	
 			<InputWithClear
 				value={filterValue}
