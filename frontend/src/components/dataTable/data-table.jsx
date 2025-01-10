@@ -35,6 +35,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 	const table = useReactTable({
 		data,
 		columns,
+		enableMultiSort: false,
 		getCoreRowModel: getCoreRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		onSortingChange: setSorting,
