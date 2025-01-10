@@ -39,7 +39,7 @@ export const clientColumns = [
 	{
 		accessorKey: 'name',
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} title="Name" />
+			<DataTableColumnHeader column={column} title="Name" initialSort={"asc"} />
 		),
 	},
 	{
