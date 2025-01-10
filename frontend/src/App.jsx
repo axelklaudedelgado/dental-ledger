@@ -1,26 +1,37 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+
 import { fetchClients } from './reducers/clientSlice'
 
+import Wrapper from './components/Wrapper'
 import { ClientTable } from './components/ClientTable'
+import { ClientTransactions } from './components/ClientTransactions'
 
 function App() {
 	const dispatch = useDispatch()
-	const {
-		items: clients,
-		status,
-		error,
-	} = useSelector((state) => state.clients)
+	const { clients, clientsStatus, clientsError } = useSelector(
+		(state) => state.clients,
+	)
 
 	useEffect(() => {
 		dispatch(fetchClients())
 	}, [dispatch])
 
 	return (
-		<div className="container mx-auto py-10">
-			<ClientTable data={clients} status={status} error={error} />
-		</div>
+		<Router>
+			<Routes>
+				<Route element={< Wrapper />}>
+					<Route path="/" element={<ClientTable
+												data={clients}
+												status={clientsStatus}
+												error={clientsError}
+											/>} />
+					<Route path="/clients/:id" element={< ClientTransactions />} />
+				</Route>
+			</Routes>
+		</Router>
 	)
 }
 

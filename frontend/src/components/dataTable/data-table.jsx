@@ -3,6 +3,7 @@ import { DataTableViewOptions } from './components/column-toggle'
 import { Search } from './components/data-table-search-filter'
 
 import * as React from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
 	flexRender,
 	getCoreRowModel,
@@ -24,6 +25,8 @@ import {
 import { Spinner } from '../ui/extensions/spinner'
 
 export function DataTable({ columns, data, isLoading, error, type = null }) {
+	const navigate = useNavigate()
+
 	const [sorting, setSorting] = React.useState([])
 	const [columnFilters, setColumnFilters] = React.useState([])
 	const [columnVisibility, setColumnVisibility] = React.useState({})
@@ -105,6 +108,8 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 									data-state={
 										row.getIsSelected() && 'selected'
 									}
+									className="cursor-pointer"
+									onClick={() => navigate(`/${type}/${row.original.id}`)}
 								>
 									{row.getVisibleCells().map((cell) => (
 										<TableCell key={cell.id}>
