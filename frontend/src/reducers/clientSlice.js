@@ -24,7 +24,11 @@ const clientSlice = createSlice({
 		clientDetailsStatus: 'idle',
 		clientDetailsError: null,
 	},
-	reducers: {},
+	reducers: {
+		addClient: (state, action) => {
+			state.clients.push(action.payload)
+		},
+	},
 	extraReducers: (builder) => {
 		builder
 			// Fetch all clients
@@ -56,4 +60,5 @@ const clientSlice = createSlice({
 	},
 })
 
+export const { addClient } = clientSlice.actions
 export default clientSlice.reducer

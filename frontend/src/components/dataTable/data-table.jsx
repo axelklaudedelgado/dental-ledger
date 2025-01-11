@@ -1,6 +1,7 @@
 import { DataTablePagination } from './components/data-table-pagination'
 import { DataTableViewOptions } from './components/column-toggle'
 import { Search } from './components/data-table-search-filter'
+import { ClientForm } from '../ClientForm'
 
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -61,6 +62,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 					clientFilter={type === 'clients'}
 				/>
 				<DataTableViewOptions table={table} />
+				{type === 'clients' && <ClientForm />}
 			</div>
 			<div className="rounded-md border">
 				<Table>
