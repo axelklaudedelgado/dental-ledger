@@ -23,6 +23,13 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from '@/components/ui/tooltip'
+
 import { Spinner } from '../ui/extensions/spinner'
 
 export function DataTable({ columns, data, isLoading, error, type = null }) {
@@ -118,9 +125,26 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 								>
 									{row.getVisibleCells().map((cell) => (
 										<TableCell key={cell.id}>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext(),
+											{cell.column.id === 'address' ? (
+												<TooltipProvider>
+													<Tooltip>
+														<TooltipTrigger>
+															<span className="block max-w-[200px] truncate">
+																{cell.getValue()}
+															</span>
+														</TooltipTrigger>
+														<TooltipContent>
+															<p>
+																{cell.getValue()}
+															</p>
+														</TooltipContent>
+													</Tooltip>
+												</TooltipProvider>
+											) : (
+												flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext(),
+												)
 											)}
 										</TableCell>
 									))}
