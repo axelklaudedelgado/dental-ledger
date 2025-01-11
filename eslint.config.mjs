@@ -58,8 +58,7 @@ export default [
 		},
 
 		rules: {
-			'prettier/prettier': 'error',
-			indent: ['error', 'tab'],
+			'prettier/prettier': ['error', { useTabs: true }],
 			'linebreak-style': ['error', 'windows'],
 			quotes: ['error', 'single'],
 			semi: ['error', 'never'],
