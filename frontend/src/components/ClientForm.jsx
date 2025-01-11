@@ -39,6 +39,7 @@ const schema = yup.object().shape({
 
 export function ClientForm() {
 	const dispatch = useDispatch()
+	const [generalError, setGeneralError] = useState('')
 	const [open, setOpen] = useState(false)
 	const { toast } = useToast()
 
@@ -70,6 +71,14 @@ export function ClientForm() {
 		}
 
 		try {
+			const response = await clientService.checkName({ name })
+			if (response.exists) {
+				setGeneralError(
+					`Client with name "${trimmedFirstName} ${trimmedLastName}" already exists.`,
+				)
+				return
+			}
+
 			const newClient = await clientService.create(requestBody)
 			dispatch(addClient(newClient))
 
@@ -79,6 +88,7 @@ export function ClientForm() {
 			})
 
 			setOpen(false)
+			resetForm()
 		} catch {
 			toast({
 				variant: 'destructive',
@@ -108,6 +118,7 @@ export function ClientForm() {
 			lastName: '',
 			address: '',
 		})
+		setGeneralError('')
 	}
 
 	const handleOpenChange = (newOpen) => {
@@ -115,6 +126,10 @@ export function ClientForm() {
 		if (!newOpen) {
 			resetForm()
 		}
+	}
+
+	const handleFieldChange = () => {
+		setGeneralError('')
 	}
 
 	return (
@@ -137,6 +152,11 @@ export function ClientForm() {
 						onSubmit={form.handleSubmit(onSubmit)}
 						className="space-y-4"
 					>
+						{generalError && (
+							<div className="text-red-500 text-sm font-medium">
+								{generalError}
+							</div>
+						)}
 						<FormField
 							control={form.control}
 							name="title"
@@ -145,7 +165,10 @@ export function ClientForm() {
 									<FormLabel>Title</FormLabel>
 									<FormControl>
 										<RadioGroup
-											onValueChange={field.onChange}
+											onValueChange={(value) => {
+												field.onChange(value)
+												handleFieldChange()
+											}}
 											defaultValue={field.value}
 											className="flex space-x-4"
 										>
@@ -191,6 +214,10 @@ export function ClientForm() {
 											onKeyPress={(e) =>
 												handleKeyPress(e, 'firstName')
 											}
+											onChange={(e) => {
+												field.onChange(e)
+												handleFieldChange()
+											}}
 										/>
 									</FormControl>
 									<FormMessage />
@@ -209,6 +236,10 @@ export function ClientForm() {
 											onKeyPress={(e) =>
 												handleKeyPress(e, 'lastName')
 											}
+											onChange={(e) => {
+												field.onChange(e)
+												handleFieldChange()
+											}}
 										/>
 									</FormControl>
 									<FormMessage />

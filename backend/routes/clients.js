@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { Op } = require('sequelize')
 const { Client, Transaction, Particular } = require('../models')
 
 router.get('/', async (req, res) => {
@@ -86,6 +87,22 @@ router.post('/', async (req, res) => {
 	const { name, address } = req.body
 	const newClient = await Client.create({ name, address })
 	res.json(newClient)
+})
+
+router.post('/check-name', async (req, res) => {
+	const { name } = req.body
+
+	const normalizedName = name.replace(/^(Dr\.|Dra\.)\s*/, '').trim()
+
+	const clientExists = await Client.findOne({
+		where: {
+			name: {
+				[Op.iLike]: `%${normalizedName}%`,
+			},
+		},
+	})
+
+	res.json({ exists: !!clientExists })
 })
 
 module.exports = router

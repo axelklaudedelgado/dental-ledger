@@ -17,8 +17,14 @@ const create = async (newClient) => {
 	return response.data
 }
 
+const checkName = async ({ name }) => {
+	const response = await axios.post(`${baseUrl}/check-name`, { name })
+	return response.data
+}
+
 export default {
 	getAll,
 	getOne,
 	create,
+	checkName,
 }
