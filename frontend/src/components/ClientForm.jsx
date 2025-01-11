@@ -79,11 +79,11 @@ export function ClientForm() {
 			})
 
 			setOpen(false)
-		} catch (error) {
+		} catch {
 			toast({
 				variant: 'destructive',
 				title: 'Error adding client:',
-				description: `${error.response?.data || error.message}`,
+				description: 'An error occurred while adding the client.',
 			})
 		}
 	}
