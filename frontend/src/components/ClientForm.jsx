@@ -56,10 +56,13 @@ export function ClientForm() {
 	const onSubmit = async (data) => {
 		const { title, firstName, lastName, address } = data
 
+		const trimmedFirstName = firstName.trim()
+		const trimmedLastName = lastName.trim()
+
 		const name =
 			title === 'none'
-				? `${firstName} ${lastName}`
-				: `${title}. ${firstName} ${lastName}`
+				? `${trimmedFirstName} ${trimmedLastName}`
+				: `${title}. ${trimmedFirstName} ${trimmedLastName}`
 
 		const requestBody = {
 			name,
@@ -85,11 +88,16 @@ export function ClientForm() {
 		}
 	}
 
-	const handleKeyPress = (event) => {
+	const handleKeyPress = (event, fieldName) => {
 		const keyCode = event.keyCode || event.which
 		const keyValue = String.fromCharCode(keyCode)
-		if (!/^[A-Za-z]+$/.test(keyValue)) {
+		if (!/^[A-Za-z\s]+$/.test(keyValue)) {
 			event.preventDefault()
+			form.setError(fieldName, {
+				message: 'Only letters and spaces are allowed.',
+			})
+		} else {
+			form.clearErrors(fieldName)
 		}
 	}
 
@@ -180,7 +188,9 @@ export function ClientForm() {
 									<FormControl>
 										<Input
 											{...field}
-											onKeyPress={handleKeyPress}
+											onKeyPress={(e) =>
+												handleKeyPress(e, 'firstName')
+											}
 										/>
 									</FormControl>
 									<FormMessage />
@@ -196,7 +206,9 @@ export function ClientForm() {
 									<FormControl>
 										<Input
 											{...field}
-											onKeyPress={handleKeyPress}
+											onKeyPress={(e) =>
+												handleKeyPress(e, 'lastName')
+											}
 										/>
 									</FormControl>
 									<FormMessage />
