@@ -35,7 +35,12 @@ import { Spinner } from '../ui/extensions/spinner'
 export function DataTable({ columns, data, isLoading, error, type = null }) {
 	const navigate = useNavigate()
 
-	const [sorting, setSorting] = React.useState([])
+	const initialSorting =
+		type === 'clients'
+			? [{ id: 'name', desc: false }]
+			: [{ id: 'date', desc: true }]
+
+	const [sorting, setSorting] = React.useState(initialSorting)
 	const [columnFilters, setColumnFilters] = React.useState([])
 	const [columnVisibility, setColumnVisibility] = React.useState({})
 	const [globalFilter, setGlobalFilter] = React.useState('')

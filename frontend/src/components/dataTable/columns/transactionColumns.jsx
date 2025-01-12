@@ -11,11 +11,7 @@ export const transactionColumns = [
 	{
 		accessorKey: 'date',
 		header: ({ column }) => (
-			<DataTableColumnHeader
-				column={column}
-				title="Date"
-				initialSort={'desc'}
-			/>
+			<DataTableColumnHeader column={column} title="Date" />
 		),
 		sortDescFirst: false,
 	},

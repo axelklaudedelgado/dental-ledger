@@ -1,21 +1,8 @@
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { useEffect } from 'react'
 
-export function DataTableColumnHeader({
-	column,
-	title,
-	className,
-	initialSort,
-}) {
-	useEffect(() => {
-		if (initialSort && !column.getIsSorted()) {
-			const isDesc = initialSort === 'desc'
-			column.toggleSorting(isDesc)
-		}
-	}, [initialSort, column])
-
+export function DataTableColumnHeader({ column, title, className }) {
 	return (
 		<div className={cn('flex items-center space-x-2', className)}>
 			<Button
