@@ -69,6 +69,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 		data: tableData,
 		columns,
 		enableMultiSort: false,
+		autoResetPageIndex: false,
 		getCoreRowModel: getCoreRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		onSortingChange: setSorting,
