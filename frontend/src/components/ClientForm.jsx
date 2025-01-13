@@ -37,7 +37,7 @@ const schema = yup.object().shape({
 	address: yup.string().required('Address is required'),
 })
 
-export function ClientForm() {
+export function ClientForm({ onClientAdded }) {
 	const dispatch = useDispatch()
 	const [generalError, setGeneralError] = useState('')
 	const [open, setOpen] = useState(false)
@@ -81,6 +81,7 @@ export function ClientForm() {
 
 			const newClient = await clientService.create(requestBody)
 			dispatch(addClient(newClient))
+			onClientAdded(newClient.id)
 
 			toast({
 				title: 'Client Added',

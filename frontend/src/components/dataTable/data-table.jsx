@@ -4,6 +4,7 @@ import { Search } from './components/data-table-search-filter'
 import { ClientForm } from '../ClientForm'
 
 import * as React from 'react'
+import clsx from 'clsx'
 import { useNavigate } from 'react-router-dom'
 import {
 	flexRender,
@@ -44,9 +45,28 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 	const [columnFilters, setColumnFilters] = React.useState([])
 	const [columnVisibility, setColumnVisibility] = React.useState({})
 	const [globalFilter, setGlobalFilter] = React.useState('')
+	const [highlightedRow, setHighlightedRow] = React.useState(null)
+
+	React.useEffect(() => {
+		if (highlightedRow) {
+			const timeout = setTimeout(() => {
+				setHighlightedRow(null)
+			}, 3000)
+			return () => clearTimeout(timeout)
+		}
+	}, [highlightedRow])
+
+	const highlightedRowData = React.useMemo(() => {
+		if (!highlightedRow) return null
+		return data.find((row) => row.id === highlightedRow)
+	}, [data, highlightedRow])
+
+	const tableData = React.useMemo(() => {
+		return data.filter((row) => row.id !== highlightedRow)
+	}, [data, highlightedRow])
 
 	const table = useReactTable({
-		data,
+		data: tableData,
 		columns,
 		enableMultiSort: false,
 		getCoreRowModel: getCoreRowModel(),
@@ -65,6 +85,51 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 		},
 	})
 
+	const highlightedTable = useReactTable({
+		data: highlightedRowData ? [highlightedRowData] : [],
+		columns,
+		getCoreRowModel: getCoreRowModel(),
+		state: {
+			columnVisibility,
+		},
+	})
+
+	const renderTableRow = (row, isPinned = false) => (
+		<TableRow
+			key={row.id}
+			data-state={row.getIsSelected() && 'selected'}
+			className={clsx(
+				'cursor-pointer',
+				isPinned && 'bg-yellow-100 animate-pulse',
+			)}
+			onClick={() => navigate(`/${type}/${row.original.id}`)}
+		>
+			{row.getVisibleCells().map((cell) => (
+				<TableCell key={cell.id}>
+					{cell.column.id === 'address' ? (
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger>
+									<span className="block max-w-[200px] truncate">
+										{cell.getValue()}
+									</span>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>{cell.getValue()}</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					) : (
+						flexRender(
+							cell.column.columnDef.cell,
+							cell.getContext(),
+						)
+					)}
+				</TableCell>
+			))}
+		</TableRow>
+	)
+
 	return (
 		<div>
 			<div className="flex items-center py-4">
@@ -74,7 +139,13 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 					clientFilter={type === 'clients'}
 				/>
 				<DataTableViewOptions table={table} />
-				{type === 'clients' && <ClientForm />}
+				{type === 'clients' && (
+					<ClientForm
+						onClientAdded={(newClientId) =>
+							setHighlightedRow(newClientId)
+						}
+					/>
+				)}
 			</div>
 			<div className="rounded-md border">
 				<Table>
@@ -116,54 +187,30 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 									Failed to load clients data: {error}
 								</TableCell>
 							</TableRow>
-						) : table.getRowModel().rows?.length ? (
-							table.getRowModel().rows.map((row) => (
-								<TableRow
-									key={row.id}
-									data-state={
-										row.getIsSelected() && 'selected'
-									}
-									className="cursor-pointer"
-									onClick={() =>
-										navigate(`/${type}/${row.original.id}`)
-									}
-								>
-									{row.getVisibleCells().map((cell) => (
-										<TableCell key={cell.id}>
-											{cell.column.id === 'address' ? (
-												<TooltipProvider>
-													<Tooltip>
-														<TooltipTrigger>
-															<span className="block max-w-[200px] truncate">
-																{cell.getValue()}
-															</span>
-														</TooltipTrigger>
-														<TooltipContent>
-															<p>
-																{cell.getValue()}
-															</p>
-														</TooltipContent>
-													</Tooltip>
-												</TooltipProvider>
-											) : (
-												flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext(),
-												)
-											)}
-										</TableCell>
-									))}
-								</TableRow>
-							))
 						) : (
-							<TableRow>
-								<TableCell
-									colSpan={columns.length}
-									className="h-24 text-center"
-								>
-									No results.
-								</TableCell>
-							</TableRow>
+							<>
+								{highlightedRowData &&
+									highlightedTable
+										.getRowModel()
+										.rows.map((row) =>
+											renderTableRow(row, true),
+										)}
+
+								{table.getRowModel().rows.length ? (
+									table
+										.getRowModel()
+										.rows.map((row) => renderTableRow(row))
+								) : (
+									<TableRow>
+										<TableCell
+											colSpan={columns.length}
+											className="h-24 text-center"
+										>
+											No results.
+										</TableCell>
+									</TableRow>
+								)}
+							</>
 						)}
 					</TableBody>
 				</Table>
