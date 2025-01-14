@@ -1,6 +1,16 @@
 import { DataTableColumnHeader } from '../components/data-table-column-header'
 import { Badge } from '../../ui/badge'
 
+function removePrefix(name) {
+	return name.replace(/^(Dr\.|Dra\.)\s+/i, '').trim()
+}
+
+const nameSort = (rowA, rowB, columnId) => {
+	const valueA = removePrefix(rowA.getValue(columnId))
+	const valueB = removePrefix(rowB.getValue(columnId))
+	return valueA.localeCompare(valueB)
+}
+
 const lastTransactionSort = (rowA, rowB, columnId) => {
 	const valueA = rowA.getValue(columnId)
 	const valueB = rowB.getValue(columnId)
@@ -41,6 +51,7 @@ export const clientColumns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Name" />
 		),
+		sortingFn: nameSort,
 	},
 	{
 		accessorKey: 'address',
