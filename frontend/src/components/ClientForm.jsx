@@ -22,6 +22,8 @@ import {
 } from './ui/form'
 import { Input } from './ui/input'
 import { RadioGroup, RadioGroupItem } from './ui/radio-group'
+import { Checkbox } from './ui/checkbox'
+import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 
 import { useDispatch } from 'react-redux'
 import { addClient } from '../reducers/clientSlice'
@@ -39,8 +41,9 @@ const schema = yup.object().shape({
 
 export function ClientForm({ onClientAdded }) {
 	const dispatch = useDispatch()
-	const [generalError, setGeneralError] = useState('')
 	const [open, setOpen] = useState(false)
+	const [acknowledgeChecked, setAcknowledgeChecked] = useState(false)
+	const [showAlert, setShowAlert] = useState(false)
 	const { toast } = useToast()
 
 	const form = useForm({
@@ -73,23 +76,23 @@ export function ClientForm({ onClientAdded }) {
 		try {
 			const response = await clientService.checkName({ name })
 			if (response.exists) {
-				setGeneralError(
-					`Client with name "${trimmedFirstName} ${trimmedLastName}" already exists.`,
-				)
-				return
+				setShowAlert(true)
+				setAcknowledgeChecked(false)
 			}
 
-			const newClient = await clientService.create(requestBody)
-			dispatch(addClient(newClient))
-			onClientAdded(newClient.id)
+			if (!response.exists || (response.exists && acknowledgeChecked)) {
+				const newClient = await clientService.create(requestBody)
+				dispatch(addClient(newClient))
+				onClientAdded(newClient.id)
 
-			toast({
-				title: 'Client Added',
-				description: `${name} has been added successfully.`,
-			})
+				toast({
+					title: 'Client Added',
+					description: `${requestBody.name} has been added successfully.`,
+				})
 
-			setOpen(false)
-			resetForm()
+				setOpen(false)
+				resetForm()
+			}
 		} catch {
 			toast({
 				variant: 'destructive',
@@ -119,7 +122,8 @@ export function ClientForm({ onClientAdded }) {
 			lastName: '',
 			address: '',
 		})
-		setGeneralError('')
+		setShowAlert(false)
+		setAcknowledgeChecked(false)
 	}
 
 	const handleOpenChange = (newOpen) => {
@@ -130,7 +134,7 @@ export function ClientForm({ onClientAdded }) {
 	}
 
 	const handleFieldChange = () => {
-		setGeneralError('')
+		setShowAlert(false)
 	}
 
 	return (
@@ -153,10 +157,22 @@ export function ClientForm({ onClientAdded }) {
 						onSubmit={form.handleSubmit(onSubmit)}
 						className="space-y-4"
 					>
-						{generalError && (
-							<div className="text-red-500 text-sm font-medium">
-								{generalError}
-							</div>
+						{showAlert && (
+							<Alert className="mb-4 border-yellow-500 bg-yellow-50 text-yellow-900">
+								<AlertTitle className="text-lg font-semibold">
+									Warning: Duplicate Client
+								</AlertTitle>
+								<AlertDescription className="mt-2">
+									<p>
+										A client with the name{' '}
+										<strong>
+											{form.getValues('firstName')}{' '}
+											{form.getValues('lastName')}
+										</strong>{' '}
+										already exists.
+									</p>
+								</AlertDescription>
+							</Alert>
 						)}
 						<FormField
 							control={form.control}
@@ -260,6 +276,22 @@ export function ClientForm({ onClientAdded }) {
 								</FormItem>
 							)}
 						/>
+						{showAlert && (
+							<div className="flex items-center space-x-2 mb-4">
+								<Checkbox
+									id="acknowledge"
+									checked={acknowledgeChecked}
+									onCheckedChange={setAcknowledgeChecked}
+								/>
+								<label
+									htmlFor="acknowledge"
+									className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+								>
+									I acknowledge that I'm adding a duplicate
+									client
+								</label>
+							</div>
+						)}
 						<DialogFooter>
 							<Button
 								type="button"
@@ -268,7 +300,12 @@ export function ClientForm({ onClientAdded }) {
 							>
 								Cancel
 							</Button>
-							<Button type="submit">Add Client</Button>
+							<Button
+								type="submit"
+								disabled={showAlert && !acknowledgeChecked}
+							>
+								Add Client
+							</Button>
 						</DialogFooter>
 					</form>
 				</Form>
