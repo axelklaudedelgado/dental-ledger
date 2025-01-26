@@ -1,6 +1,8 @@
 import { DataTableColumnHeader } from '../components/data-table-column-header'
 import { Badge } from '../../ui/badge'
 
+import { TableRowActions } from '../components/data-table-row-actions'
+
 function removePrefix(name) {
 	return name.replace(/^(Dr\.|Dra\.)\s+/i, '').trim()
 }
@@ -77,5 +79,9 @@ export const clientColumns = [
 			/>
 		),
 		sortingFn: lastTransactionSort,
+	},
+	{
+		id: 'actions',
+		cell: ({ row }) => <TableRowActions row={row} type="clients" />,
 	},
 ]
