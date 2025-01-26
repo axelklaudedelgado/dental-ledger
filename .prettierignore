@@ -1,4 +1,7 @@
 node_modules
 
+README.md
+
+frontend/src/components/ui/
 frontend/node_modules/
 backend/node_modules/
