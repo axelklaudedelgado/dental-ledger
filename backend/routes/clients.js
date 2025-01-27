@@ -105,4 +105,9 @@ router.post('/check-name', async (req, res) => {
 	res.json({ exists: !!clientExists })
 })
 
+router.delete('/:id', async (req, res) => {
+	await Client.destroy({ where: { id: req.params.id } })
+	res.json({ message: 'Client deleted' })
+})
+
 module.exports = router
