@@ -22,9 +22,15 @@ const checkName = async ({ name }) => {
 	return response.data
 }
 
+const deleteOne = async (id) => {
+	const response = await axios.delete(`${baseUrl}/${id}`)
+	return response.data
+}
+
 export default {
 	getAll,
 	getOne,
 	create,
 	checkName,
+	deleteOne,
 }
