@@ -28,6 +28,12 @@ const clientSlice = createSlice({
 		addClient: (state, action) => {
 			state.clients.push(action.payload)
 		},
+		deleteClient: (state, action) => {
+			const clientId = action.payload
+			state.clients = state.clients.filter(
+				(client) => client.id !== clientId,
+			)
+		},
 	},
 	extraReducers: (builder) => {
 		builder
@@ -60,5 +66,5 @@ const clientSlice = createSlice({
 	},
 })
 
-export const { addClient } = clientSlice.actions
+export const { addClient, deleteClient } = clientSlice.actions
 export default clientSlice.reducer
