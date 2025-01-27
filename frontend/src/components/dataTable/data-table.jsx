@@ -37,7 +37,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 	const navigate = useNavigate()
 
 	const initialSorting =
-		type === 'clients'
+		type === 'client'
 			? [{ id: 'name', desc: false }]
 			: [{ id: 'date', desc: true }]
 
@@ -137,10 +137,10 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 				<Search
 					table={table}
 					placeholder="Search..."
-					clientFilter={type === 'clients'}
+					clientFilter={type === 'client'}
 				/>
 				<DataTableViewOptions table={table} />
-				{type === 'clients' && (
+				{type === 'client' && (
 					<ClientForm
 						onClientAdded={(newClientId) =>
 							setHighlightedRow(newClientId)

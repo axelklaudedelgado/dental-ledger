@@ -37,7 +37,7 @@ export function TableRowActions({ row, type }) {
 	const [dropdownOpen, setDropdownOpen] = useState(false)
 
 	const handleDelete = async () => {
-		if (type === 'clients') {
+		if (type === 'client') {
 			const clientId = row.original.id
 			const clientName = row.original.name
 
@@ -105,7 +105,7 @@ export function TableRowActions({ row, type }) {
 					<AlertDialogHeader>
 						<AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
 						<AlertDialogDescription>
-							You are about to delete this {type.slice(0, -1)}:{' '}
+							You are about to delete this {type}:{' '}
 							<strong>{row.original.name}</strong>
 							<br />
 							<br />

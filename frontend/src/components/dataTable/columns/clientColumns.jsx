@@ -82,6 +82,6 @@ export const clientColumns = [
 	},
 	{
 		id: 'actions',
-		cell: ({ row }) => <TableRowActions row={row} type="clients" />,
+		cell: ({ row }) => <TableRowActions row={row} type="client" />,
 	},
 ]

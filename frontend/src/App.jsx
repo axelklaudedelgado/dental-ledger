@@ -34,7 +34,7 @@ function App() {
 						}
 					/>
 					<Route
-						path="/clients/:id"
+						path="/client/:id"
 						element={<ClientTransactions />}
 					/>
 				</Route>
