@@ -197,20 +197,22 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 											renderTableRow(row, true),
 										)}
 
-								{table.getRowModel().rows.length ? (
+								{table.getRowModel().rows.length > 0 &&
 									table
 										.getRowModel()
-										.rows.map((row) => renderTableRow(row))
-								) : (
-									<TableRow>
-										<TableCell
-											colSpan={columns.length}
-											className="h-24 text-center"
-										>
-											No results.
-										</TableCell>
-									</TableRow>
-								)}
+										.rows.map((row) => renderTableRow(row))}
+
+								{!highlightedRowData &&
+									table.getRowModel().rows.length === 0 && (
+										<TableRow>
+											<TableCell
+												colSpan={columns.length}
+												className="h-24 text-center"
+											>
+												No results.
+											</TableCell>
+										</TableRow>
+									)}
 							</>
 						)}
 					</TableBody>
