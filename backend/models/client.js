@@ -11,7 +11,15 @@ Client.init(
 			primaryKey: true,
 			autoIncrement: true,
 		},
-		name: {
+		title: {
+			type: DataTypes.STRING,
+			allowNull: true,
+		},
+		firstName: {
+			type: DataTypes.STRING,
+			allowNull: false,
+		},
+		lastName: {
 			type: DataTypes.STRING,
 			allowNull: false,
 		},
@@ -40,6 +48,14 @@ Client.init(
 		underscored: true,
 		timestamps: true,
 		modelName: 'client',
+		getterMethods: {
+			fullName() {
+				if (this.title) {
+					return `${this.title} ${this.firstName} ${this.lastName}`.trim()
+				}
+				return `${this.firstName} ${this.lastName}`.trim()
+			},
+		},
 	},
 )
 

@@ -24,8 +24,8 @@ export const createClient = createAsyncThunk(
 
 export const checkClientName = createAsyncThunk(
 	'clients/checkName',
-	async (name) => {
-		const response = await clientService.checkName(name)
+	async ({ firstName, lastName }) => {
+		const response = await clientService.checkName({ firstName, lastName })
 		return response
 	},
 )

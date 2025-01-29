@@ -31,7 +31,7 @@ import { createClient, checkClientName } from '../reducers/clientSlice'
 const schema = yup.object().shape({
 	title: yup
 		.string()
-		.oneOf(['Dr', 'Dra', 'none'])
+		.oneOf(['Dr.', 'Dra.', 'none'])
 		.required('Title is required'),
 	firstName: yup.string().required('First name is required'),
 	lastName: yup.string().required('Last name is required'),
@@ -62,19 +62,19 @@ export function ClientForm({ onClientAdded }) {
 		const trimmedFirstName = firstName.trim()
 		const trimmedLastName = lastName.trim()
 
-		const name =
-			title === 'none'
-				? `${trimmedFirstName} ${trimmedLastName}`
-				: `${title}. ${trimmedFirstName} ${trimmedLastName}`
-
 		const requestBody = {
-			name,
+			title: title === 'none' ? null : title,
+			firstName: trimmedFirstName,
+			lastName: trimmedLastName,
 			address,
 		}
 
 		try {
 			const nameCheckResult = await dispatch(
-				checkClientName({ name }),
+				checkClientName({
+					firstName: trimmedFirstName,
+					lastName: trimmedLastName,
+				}),
 			).unwrap()
 
 			if (nameCheckResult.exists) {
@@ -198,7 +198,7 @@ export function ClientForm({ onClientAdded }) {
 										>
 											<FormItem className="flex items-center space-x-2">
 												<FormControl>
-													<RadioGroupItem value="Dr" />
+													<RadioGroupItem value="Dr." />
 												</FormControl>
 												<FormLabel className="font-normal">
 													Dr.
@@ -206,7 +206,7 @@ export function ClientForm({ onClientAdded }) {
 											</FormItem>
 											<FormItem className="flex items-center space-x-2">
 												<FormControl>
-													<RadioGroupItem value="Dra" />
+													<RadioGroupItem value="Dra." />
 												</FormControl>
 												<FormLabel className="font-normal">
 													Dra.

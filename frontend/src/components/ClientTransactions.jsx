@@ -22,7 +22,7 @@ export const ClientTransactions = () => {
 			<h1 className="text-4xl font-bold">Statement of Account</h1>
 			{selectedClient ? (
 				<>
-					<p>Name: {selectedClient.name}</p>
+					<p>Name: {selectedClient.fullName}</p>
 					<p>Address: {selectedClient.address}</p>
 				</>
 			) : (

@@ -3,13 +3,9 @@ import { Badge } from '../../ui/badge'
 
 import { TableRowActions } from '../components/data-table-row-actions'
 
-function removePrefix(name) {
-	return name.replace(/^(Dr\.|Dra\.)\s+/i, '').trim()
-}
-
-const nameSort = (rowA, rowB, columnId) => {
-	const valueA = removePrefix(rowA.getValue(columnId))
-	const valueB = removePrefix(rowB.getValue(columnId))
+const nameSort = (rowA, rowB) => {
+	const valueA = `${rowA.original.firstName} ${rowA.original.lastName}`
+	const valueB = `${rowB.original.firstName} ${rowB.original.lastName}`
 	return valueA.localeCompare(valueB)
 }
 
@@ -49,7 +45,8 @@ export const clientColumns = [
 		},
 	},
 	{
-		accessorKey: 'name',
+		accessorFn: (row) => row.fullName.trim(),
+		id: 'fullName',
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Name" />
 		),

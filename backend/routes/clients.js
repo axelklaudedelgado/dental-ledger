@@ -4,7 +4,12 @@ const { Client, Transaction, Particular } = require('../models')
 
 router.get('/', async (req, res) => {
 	const clients = await Client.findAll()
-	res.json(clients)
+	res.json(
+		clients.map((client) => ({
+			...client.toJSON(),
+			fullName: client.fullName,
+		})),
+	)
 })
 
 router.get('/:id', async (req, res) => {
@@ -12,7 +17,7 @@ router.get('/:id', async (req, res) => {
 
 	const client = await Client.findOne({
 		where: { id },
-		attributes: ['id', 'name', 'address'],
+		attributes: ['id', 'title', 'firstName', 'lastName', 'address'],
 		include: [
 			{
 				model: Transaction,
@@ -76,7 +81,7 @@ router.get('/:id', async (req, res) => {
 
 	res.status(200).json({
 		client: {
-			name: client.name,
+			fullName: client.fullName,
 			address: client.address,
 		},
 		transactions: formattedTransactions,
@@ -84,21 +89,38 @@ router.get('/:id', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-	const { name, address } = req.body
-	const newClient = await Client.create({ name, address })
+	const { title, firstName, lastName, address } = req.body
+	const newClient = await Client.create({
+		title,
+		firstName,
+		lastName,
+		address,
+	})
 	res.json(newClient)
 })
 
-router.post('/check-name', async (req, res) => {
-	const { name } = req.body
+router.put('/:id', async (req, res) => {
+	const { id } = req.params
+	const { title, firstName, lastName, address } = req.body
 
-	const normalizedName = name.replace(/^(Dr\.|Dra\.)\s*/, '').trim()
+	const client = await Client.findByPk(id)
+	if (!client) {
+		return res.status(404).json({ error: 'Client not found' })
+	}
+
+	await client.update({ title, firstName, lastName, address })
+	res.json(client)
+})
+
+router.post('/check-name', async (req, res) => {
+	const { firstName, lastName } = req.body
 
 	const clientExists = await Client.findOne({
 		where: {
-			name: {
-				[Op.iLike]: `%${normalizedName}%`,
-			},
+			[Op.and]: [
+				{ firstName: { [Op.iLike]: firstName } },
+				{ lastName: { [Op.iLike]: lastName } },
+			],
 		},
 	})
 

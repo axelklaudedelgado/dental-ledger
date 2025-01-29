@@ -17,8 +17,11 @@ const create = async (newClient) => {
 	return response.data
 }
 
-const checkName = async ({ name }) => {
-	const response = await axios.post(`${baseUrl}/check-name`, { name })
+const checkName = async ({ firstName, lastName }) => {
+	const response = await axios.post(`${baseUrl}/check-name`, {
+		firstName,
+		lastName,
+	})
 	return response.data
 }
 

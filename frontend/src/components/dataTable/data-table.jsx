@@ -38,7 +38,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 
 	const initialSorting =
 		type === 'client'
-			? [{ id: 'name', desc: false }]
+			? [{ id: 'fullName', desc: false }]
 			: [{ id: 'date', desc: true }]
 
 	const [sorting, setSorting] = React.useState(initialSorting)
