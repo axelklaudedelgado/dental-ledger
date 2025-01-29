@@ -26,8 +26,7 @@ import { Checkbox } from './ui/checkbox'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 
 import { useDispatch } from 'react-redux'
-import { addClient } from '../reducers/clientSlice'
-import clientService from '../services/clientService'
+import { createClient, checkClientName } from '../reducers/clientSlice'
 
 const schema = yup.object().shape({
 	title: yup
@@ -74,16 +73,24 @@ export function ClientForm({ onClientAdded }) {
 		}
 
 		try {
-			const response = await clientService.checkName({ name })
-			if (response.exists) {
+			const nameCheckResult = await dispatch(
+				checkClientName({ name }),
+			).unwrap()
+
+			if (nameCheckResult.exists) {
 				setShowAlert(true)
 				setAcknowledgeChecked(false)
+				return
 			}
 
-			if (!response.exists || (response.exists && acknowledgeChecked)) {
-				const newClient = await clientService.create(requestBody)
-				dispatch(addClient(newClient))
-				onClientAdded(newClient.id)
+			if (
+				!nameCheckResult.exists ||
+				(nameCheckResult.exists && acknowledgeChecked)
+			) {
+				const result = await dispatch(
+					createClient(requestBody),
+				).unwrap()
+				onClientAdded(result.id)
 
 				toast({
 					title: 'Client Added',

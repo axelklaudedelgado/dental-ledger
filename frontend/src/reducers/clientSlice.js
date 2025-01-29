@@ -14,6 +14,30 @@ export const fetchClientDetails = createAsyncThunk(
 	},
 )
 
+export const createClient = createAsyncThunk(
+	'clients/create',
+	async (clientData) => {
+		const newClient = await clientService.create(clientData)
+		return newClient
+	},
+)
+
+export const checkClientName = createAsyncThunk(
+	'clients/checkName',
+	async (name) => {
+		const response = await clientService.checkName(name)
+		return response
+	},
+)
+
+export const deleteClient = createAsyncThunk(
+	'clients/delete',
+	async (clientId) => {
+		await clientService.deleteOne(clientId)
+		return clientId
+	},
+)
+
 const clientSlice = createSlice({
 	name: 'clients',
 	initialState: {
@@ -24,17 +48,7 @@ const clientSlice = createSlice({
 		clientDetailsStatus: 'idle',
 		clientDetailsError: null,
 	},
-	reducers: {
-		addClient: (state, action) => {
-			state.clients.push(action.payload)
-		},
-		deleteClient: (state, action) => {
-			const clientId = action.payload
-			state.clients = state.clients.filter(
-				(client) => client.id !== clientId,
-			)
-		},
-	},
+	reducers: {},
 	extraReducers: (builder) => {
 		builder
 			// Fetch all clients
@@ -63,8 +77,19 @@ const clientSlice = createSlice({
 				state.clientDetailsStatus = 'failed'
 				state.clientDetailsError = action.error.message
 			})
+
+			// Create a client
+			.addCase(createClient.fulfilled, (state, action) => {
+				state.clients.push(action.payload)
+			})
+
+			// Delete a single client
+			.addCase(deleteClient.fulfilled, (state, action) => {
+				state.clients = state.clients.filter(
+					(client) => client.id !== action.payload,
+				)
+			})
 	},
 })
 
-export const { addClient, deleteClient } = clientSlice.actions
 export default clientSlice.reducer

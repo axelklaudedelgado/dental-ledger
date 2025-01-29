@@ -26,7 +26,6 @@ import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { useToast } from '../../ui/hooks/use-toast'
 
-import clientService from '@/services/clientService'
 import { deleteClient } from '@/reducers/clientSlice'
 
 export function TableRowActions({ row, type }) {
@@ -42,8 +41,7 @@ export function TableRowActions({ row, type }) {
 			const clientName = row.original.name
 
 			try {
-				await clientService.deleteOne(clientId)
-				dispatch(deleteClient(clientId))
+				await dispatch(deleteClient(clientId)).unwrap()
 				toast({
 					variant: 'destructive',
 					title: 'Client Deleted',
