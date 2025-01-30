@@ -38,7 +38,7 @@ export function TableRowActions({ row, type }) {
 	const handleDelete = async () => {
 		if (type === 'client') {
 			const clientId = row.original.id
-			const clientName = row.original.name
+			const clientName = row.original.fullName
 
 			try {
 				await dispatch(deleteClient(clientId)).unwrap()
@@ -104,7 +104,7 @@ export function TableRowActions({ row, type }) {
 						<AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
 						<AlertDialogDescription>
 							You are about to delete this {type}:{' '}
-							<strong>{row.original.name}</strong>
+							<strong>{row.original.fullName}</strong>
 							<br />
 							<br />
 							Please be aware that this action is irreversible.
