@@ -18,6 +18,8 @@ import {
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
+import { ClientForm } from '../../ClientForm'
+
 import { Button } from '@/components/ui/button'
 import { MoreHorizontal } from 'lucide-react'
 
@@ -34,6 +36,7 @@ export function TableRowActions({ row, type }) {
 	const { toast } = useToast()
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 	const [dropdownOpen, setDropdownOpen] = useState(false)
+	const [updateFormOpen, setUpdateFormOpen] = useState(false)
 
 	const handleDelete = async () => {
 		if (type === 'client') {
@@ -62,8 +65,8 @@ export function TableRowActions({ row, type }) {
 		navigate(`/${type}/${row.original.id}`)
 	}
 
-	const handleUpdate = () => {
-		console.log('update')
+	const handleClientUpdated = () => {
+		setUpdateFormOpen(false)
 	}
 
 	return (
@@ -81,7 +84,13 @@ export function TableRowActions({ row, type }) {
 						View {type} details
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
-					<DropdownMenuItem onSelect={handleUpdate}>
+					<DropdownMenuItem
+						onSelect={(e) => {
+							e.preventDefault()
+							setUpdateFormOpen(true)
+							setDropdownOpen(false)
+						}}
+					>
 						Update
 					</DropdownMenuItem>
 					<DropdownMenuItem
@@ -94,6 +103,14 @@ export function TableRowActions({ row, type }) {
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
+
+			<ClientForm
+				initialData={row.original}
+				onClientUpdated={handleClientUpdated}
+				open={updateFormOpen}
+				isUpdateMode={true}
+				onOpenChange={setUpdateFormOpen}
+			/>
 
 			<AlertDialog
 				open={deleteDialogOpen}
