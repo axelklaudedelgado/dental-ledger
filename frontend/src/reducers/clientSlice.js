@@ -30,6 +30,14 @@ export const checkClientName = createAsyncThunk(
 	},
 )
 
+export const updateClient = createAsyncThunk(
+	'clients/updateClient',
+	async ({ id, updatedData }) => {
+		const updatedClient = await clientService.update(id, updatedData)
+		return updatedClient
+	},
+)
+
 export const deleteClient = createAsyncThunk(
 	'clients/delete',
 	async (clientId) => {
@@ -81,6 +89,15 @@ const clientSlice = createSlice({
 			// Create a client
 			.addCase(createClient.fulfilled, (state, action) => {
 				state.clients.push(action.payload)
+			})
+
+			// Update a client
+			.addCase(updateClient.fulfilled, (state, action) => {
+				state.clients = state.clients.map((client) =>
+					client.id === action.payload.client.id
+						? action.payload.client
+						: client,
+				)
 			})
 
 			// Delete a single client
