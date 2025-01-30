@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import * as yup from 'yup'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -24,9 +24,14 @@ import { Input } from './ui/input'
 import { RadioGroup, RadioGroupItem } from './ui/radio-group'
 import { Checkbox } from './ui/checkbox'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
+import { Pencil } from 'lucide-react'
 
 import { useDispatch } from 'react-redux'
-import { createClient, checkClientName } from '../reducers/clientSlice'
+import {
+	createClient,
+	checkClientName,
+	updateClient,
+} from '../reducers/clientSlice'
 
 const schema = yup.object().shape({
 	title: yup
@@ -38,12 +43,24 @@ const schema = yup.object().shape({
 	address: yup.string().required('Address is required'),
 })
 
-export function ClientForm({ onClientAdded }) {
+export function ClientForm({
+	onClientAdded,
+	onClientUpdated,
+	initialData = null,
+	isUpdateMode = false,
+	open: externalOpen,
+	onOpenChange: externalOnOpenChange,
+}) {
 	const dispatch = useDispatch()
-	const [open, setOpen] = useState(false)
+	const [internalOpen, setInternalOpen] = useState(false)
 	const [acknowledgeChecked, setAcknowledgeChecked] = useState(false)
 	const [showAlert, setShowAlert] = useState(false)
+	const [editingField, setEditingField] = useState(null)
 	const { toast } = useToast()
+
+	const firstNameRef = useRef(null)
+	const lastNameRef = useRef(null)
+	const addressRef = useRef(null)
 
 	const form = useForm({
 		resolver: yupResolver(schema),
@@ -56,11 +73,44 @@ export function ClientForm({ onClientAdded }) {
 		mode: 'onChange',
 	})
 
+	const open = externalOpen !== undefined ? externalOpen : internalOpen
+	const onOpenChange = externalOnOpenChange || setInternalOpen
+
+	useEffect(() => {
+		if (initialData && open) {
+			form.reset({
+				title: initialData.title || 'none',
+				firstName: initialData.firstName,
+				lastName: initialData.lastName,
+				address: initialData.address,
+			})
+			setEditingField(null)
+		}
+	}, [initialData, form, open])
+
+	useEffect(() => {
+		if (editingField) {
+			const refMap = {
+				firstName: firstNameRef,
+				lastName: lastNameRef,
+				address: addressRef,
+			}
+			const ref = refMap[editingField]
+			if (ref && ref.current) {
+				ref.current.focus()
+			}
+		}
+	}, [editingField])
+
 	const onSubmit = async (data) => {
 		const { title, firstName, lastName, address } = data
 
 		const trimmedFirstName = firstName.trim()
 		const trimmedLastName = lastName.trim()
+
+		const hasNameChanged =
+			trimmedFirstName !== initialData?.firstName ||
+			trimmedLastName !== initialData?.lastName
 
 		const requestBody = {
 			title: title === 'none' ? null : title,
@@ -70,33 +120,47 @@ export function ClientForm({ onClientAdded }) {
 		}
 
 		try {
-			const nameCheckResult = await dispatch(
-				checkClientName({
-					firstName: trimmedFirstName,
-					lastName: trimmedLastName,
-				}),
-			).unwrap()
+			if (hasNameChanged) {
+				const nameCheckResult = await dispatch(
+					checkClientName({
+						firstName: trimmedFirstName,
+						lastName: trimmedLastName,
+					}),
+				).unwrap()
 
-			if (nameCheckResult.exists && !acknowledgeChecked) {
-				setShowAlert(true)
-				return
+				if (nameCheckResult.exists && !acknowledgeChecked) {
+					setShowAlert(true)
+					return
+				}
 			}
 
-			const result = await dispatch(createClient(requestBody)).unwrap()
-			onClientAdded(result.id)
+			if (!initialData) {
+				const result = await dispatch(
+					createClient(requestBody),
+				).unwrap()
+				onClientAdded(result.id)
+			} else {
+				const result = await dispatch(
+					updateClient({
+						id: initialData.id,
+						updatedData: requestBody,
+					}),
+				).unwrap()
+				onClientUpdated(result.id)
+			}
 
 			toast({
-				title: 'Client Added',
-				description: `${requestBody.firstName} ${requestBody.lastName} has been added successfully.`,
+				title: initialData ? 'Client Updated' : 'Client Added',
+				description: `${initialData ? `${initialData.firstName} ${initialData.lastName}` : `${requestBody.firstName} ${requestBody.lastName}`} has been ${initialData ? 'updated' : 'added'} successfully.`,
 			})
 
-			setOpen(false)
+			onOpenChange(false)
 			resetForm()
 		} catch {
 			toast({
 				variant: 'destructive',
-				title: 'Error adding client:',
-				description: 'An error occurred while adding the client.',
+				title: `Error ${initialData ? 'updating' : 'adding'} client:`,
+				description: `An error occurred while ${initialData ? 'updating' : 'adding'} the client.`,
 			})
 		}
 	}
@@ -142,10 +206,11 @@ export function ClientForm({ onClientAdded }) {
 		})
 		setShowAlert(false)
 		setAcknowledgeChecked(false)
+		setEditingField(null)
 	}
 
 	const handleOpenChange = (newOpen) => {
-		setOpen(newOpen)
+		onOpenChange(newOpen)
 		if (!newOpen) {
 			resetForm()
 		}
@@ -155,20 +220,22 @@ export function ClientForm({ onClientAdded }) {
 		setShowAlert(false)
 	}
 
+	const defaultTrigger = (
+		<Button variant="outline" size="sm" className="ml-2 hidden h-8 lg:flex">
+			Add Client
+		</Button>
+	)
+
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogTrigger asChild>
-				<Button
-					variant="outline"
-					size="sm"
-					className="ml-2 hidden h-8 lg:flex"
-				>
-					Add Client
-				</Button>
-			</DialogTrigger>
+			{!isUpdateMode && (
+				<DialogTrigger asChild>{defaultTrigger}</DialogTrigger>
+			)}
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
-					<DialogTitle>Add Client</DialogTitle>
+					<DialogTitle>
+						{initialData ? 'Edit Client' : 'Add Client'}
+					</DialogTitle>
 				</DialogHeader>
 				<Form {...form}>
 					<form
@@ -199,39 +266,62 @@ export function ClientForm({ onClientAdded }) {
 								<FormItem>
 									<FormLabel>Title</FormLabel>
 									<FormControl>
-										<RadioGroup
-											onValueChange={(value) => {
-												field.onChange(value)
-												handleFieldChange()
-											}}
-											defaultValue={field.value}
-											className="flex space-x-4"
-										>
-											<FormItem className="flex items-center space-x-2">
-												<FormControl>
-													<RadioGroupItem value="Dr." />
-												</FormControl>
-												<FormLabel className="font-normal">
-													Dr.
-												</FormLabel>
-											</FormItem>
-											<FormItem className="flex items-center space-x-2">
-												<FormControl>
-													<RadioGroupItem value="Dra." />
-												</FormControl>
-												<FormLabel className="font-normal">
-													Dra.
-												</FormLabel>
-											</FormItem>
-											<FormItem className="flex items-center space-x-2">
-												<FormControl>
-													<RadioGroupItem value="none" />
-												</FormControl>
-												<FormLabel className="font-normal">
-													None
-												</FormLabel>
-											</FormItem>
-										</RadioGroup>
+										<div className="flex items-center space-x-2">
+											<RadioGroup
+												onValueChange={(value) => {
+													field.onChange(value)
+													handleFieldChange()
+												}}
+												defaultValue={field.value}
+												className="flex space-x-4"
+												disabled={
+													initialData &&
+													!(editingField === 'title')
+												}
+											>
+												<FormItem className="flex items-center space-x-2">
+													<FormControl>
+														<RadioGroupItem value="Dr." />
+													</FormControl>
+													<FormLabel className="font-normal">
+														Dr.
+													</FormLabel>
+												</FormItem>
+												<FormItem className="flex items-center space-x-2">
+													<FormControl>
+														<RadioGroupItem value="Dra." />
+													</FormControl>
+													<FormLabel className="font-normal">
+														Dra.
+													</FormLabel>
+												</FormItem>
+												<FormItem className="flex items-center space-x-2">
+													<FormControl>
+														<RadioGroupItem value="none" />
+													</FormControl>
+													<FormLabel className="font-normal">
+														None
+													</FormLabel>
+												</FormItem>
+											</RadioGroup>
+											{initialData && (
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon"
+													onClick={() =>
+														setEditingField(
+															editingField ===
+																'title'
+																? null
+																: 'title',
+														)
+													}
+												>
+													<Pencil className="h-4 w-4" />
+												</Button>
+											)}
+										</div>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -244,19 +334,50 @@ export function ClientForm({ onClientAdded }) {
 								<FormItem>
 									<FormLabel>First Name</FormLabel>
 									<FormControl>
-										<Input
-											{...field}
-											onKeyPress={(e) =>
-												handleKeyPress(e, 'firstName')
-											}
-											onFocus={() =>
-												handleFieldFocus(field)
-											}
-											onChange={(e) => {
-												field.onChange(e)
-												handleFieldChange()
-											}}
-										/>
+										<div className="relative">
+											<Input
+												{...field}
+												disabled={
+													initialData &&
+													!(
+														editingField ===
+														'firstName'
+													)
+												}
+												onKeyPress={(e) =>
+													handleKeyPress(
+														e,
+														'firstName',
+													)
+												}
+												onFocus={() =>
+													handleFieldFocus(field)
+												}
+												onChange={(e) => {
+													field.onChange(e)
+													handleFieldChange()
+												}}
+												ref={firstNameRef}
+											/>
+											{initialData && (
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon"
+													className="absolute right-2 top-1/2 -translate-y-1/2"
+													onClick={() =>
+														setEditingField(
+															editingField ===
+																'firstName'
+																? null
+																: 'firstName',
+														)
+													}
+												>
+													<Pencil className="h-4 w-4" />
+												</Button>
+											)}
+										</div>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -269,19 +390,50 @@ export function ClientForm({ onClientAdded }) {
 								<FormItem>
 									<FormLabel>Last Name</FormLabel>
 									<FormControl>
-										<Input
-											{...field}
-											onKeyPress={(e) =>
-												handleKeyPress(e, 'lastName')
-											}
-											onFocus={() =>
-												handleFieldFocus(field)
-											}
-											onChange={(e) => {
-												field.onChange(e)
-												handleFieldChange()
-											}}
-										/>
+										<div className="relative">
+											<Input
+												{...field}
+												disabled={
+													initialData &&
+													!(
+														editingField ===
+														'lastName'
+													)
+												}
+												onKeyPress={(e) =>
+													handleKeyPress(
+														e,
+														'lastName',
+													)
+												}
+												onFocus={() =>
+													handleFieldFocus(field)
+												}
+												onChange={(e) => {
+													field.onChange(e)
+													handleFieldChange()
+												}}
+												ref={lastNameRef}
+											/>
+											{initialData && (
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon"
+													className="absolute right-2 top-1/2 -translate-y-1/2"
+													onClick={() =>
+														setEditingField(
+															editingField ===
+																'lastName'
+																? null
+																: 'lastName',
+														)
+													}
+												>
+													<Pencil className="h-4 w-4" />
+												</Button>
+											)}
+										</div>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -294,12 +446,40 @@ export function ClientForm({ onClientAdded }) {
 								<FormItem>
 									<FormLabel>Address</FormLabel>
 									<FormControl>
-										<Input
-											{...field}
-											onFocus={() =>
-												handleFieldFocus(field)
-											}
-										/>
+										<div className="relative">
+											<Input
+												{...field}
+												onFocus={() =>
+													handleFieldFocus(field)
+												}
+												disabled={
+													initialData &&
+													!(
+														editingField ===
+														'address'
+													)
+												}
+												ref={addressRef}
+											/>
+											{initialData && (
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon"
+													className="absolute right-2 top-1/2 -translate-y-1/2"
+													onClick={() =>
+														setEditingField(
+															editingField ===
+																'address'
+																? null
+																: 'address',
+														)
+													}
+												>
+													<Pencil className="h-4 w-4" />
+												</Button>
+											)}
+										</div>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -316,8 +496,9 @@ export function ClientForm({ onClientAdded }) {
 									htmlFor="acknowledge"
 									className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 								>
-									I acknowledge that I'm adding a duplicate
-									client
+									{initialData
+										? 'Confirm duplicate client update'
+										: 'Confirm adding duplicate client'}
 								</label>
 							</div>
 						)}
@@ -333,7 +514,7 @@ export function ClientForm({ onClientAdded }) {
 								type="submit"
 								disabled={showAlert && !acknowledgeChecked}
 							>
-								Add Client
+								{initialData ? 'Update Client' : 'Add Client'}
 							</Button>
 						</DialogFooter>
 					</form>
