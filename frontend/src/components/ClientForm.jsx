@@ -112,14 +112,33 @@ export function ClientForm({ onClientAdded }) {
 	const handleKeyPress = (event, fieldName) => {
 		const keyCode = event.keyCode || event.which
 		const keyValue = String.fromCharCode(keyCode)
-		if (!/^[A-Za-z\s]+$/.test(keyValue)) {
+
+		if (event.ctrlKey || event.metaKey || keyCode < 32) return
+
+		if (!/^[A-Za-zñÑ\s.-]+$/.test(keyValue)) {
 			event.preventDefault()
-			form.setError(fieldName, {
-				message: 'Only letters and spaces are allowed.',
-			})
+			if (!form.formState.errors[fieldName]) {
+				form.setError(fieldName, {
+					type: 'specialCharacter',
+					message: 'Invalid character entered.',
+				})
+			}
 		} else {
-			form.clearErrors(fieldName)
+			if (form.formState.errors[fieldName]?.type === 'specialCharacter') {
+				form.clearErrors(fieldName)
+			}
 		}
+	}
+
+	const handleFieldFocus = (field) => {
+		Object.keys(form.formState.errors).forEach((key) => {
+			if (
+				key !== field.name &&
+				form.formState.errors[key]?.type === 'specialCharacter'
+			) {
+				form.clearErrors(key)
+			}
+		})
 	}
 
 	const resetForm = () => {
@@ -238,6 +257,9 @@ export function ClientForm({ onClientAdded }) {
 											onKeyPress={(e) =>
 												handleKeyPress(e, 'firstName')
 											}
+											onFocus={() =>
+												handleFieldFocus(field)
+											}
 											onChange={(e) => {
 												field.onChange(e)
 												handleFieldChange()
@@ -260,6 +282,9 @@ export function ClientForm({ onClientAdded }) {
 											onKeyPress={(e) =>
 												handleKeyPress(e, 'lastName')
 											}
+											onFocus={() =>
+												handleFieldFocus(field)
+											}
 											onChange={(e) => {
 												field.onChange(e)
 												handleFieldChange()
@@ -277,7 +302,12 @@ export function ClientForm({ onClientAdded }) {
 								<FormItem>
 									<FormLabel>Address</FormLabel>
 									<FormControl>
-										<Input {...field} />
+										<Input
+											{...field}
+											onFocus={() =>
+												handleFieldFocus(field)
+											}
+										/>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
