@@ -109,7 +109,12 @@ router.put('/:id', async (req, res) => {
 	}
 
 	await client.update({ title, firstName, lastName, address })
-	res.json(client)
+	res.status(200).json({
+		client: {
+			...client.toJSON(),
+			fullName: client.fullName,
+		},
+	})
 })
 
 router.post('/check-name', async (req, res) => {
