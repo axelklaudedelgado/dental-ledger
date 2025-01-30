@@ -77,29 +77,21 @@ export function ClientForm({ onClientAdded }) {
 				}),
 			).unwrap()
 
-			if (nameCheckResult.exists) {
+			if (nameCheckResult.exists && !acknowledgeChecked) {
 				setShowAlert(true)
-				setAcknowledgeChecked(false)
 				return
 			}
 
-			if (
-				!nameCheckResult.exists ||
-				(nameCheckResult.exists && acknowledgeChecked)
-			) {
-				const result = await dispatch(
-					createClient(requestBody),
-				).unwrap()
-				onClientAdded(result.id)
+			const result = await dispatch(createClient(requestBody)).unwrap()
+			onClientAdded(result.id)
 
-				toast({
-					title: 'Client Added',
-					description: `${requestBody.name} has been added successfully.`,
-				})
+			toast({
+				title: 'Client Added',
+				description: `${requestBody.firstName} ${requestBody.lastName} has been added successfully.`,
+			})
 
-				setOpen(false)
-				resetForm()
-			}
+			setOpen(false)
+			resetForm()
 		} catch {
 			toast({
 				variant: 'destructive',
