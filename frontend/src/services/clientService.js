@@ -17,6 +17,11 @@ const create = async (newClient) => {
 	return response.data
 }
 
+const update = async (id, updatedClient) => {
+	const response = await axios.put(`${baseUrl}/${id}`, updatedClient)
+	return response.data
+}
+
 const checkName = async ({ firstName, lastName }) => {
 	const response = await axios.post(`${baseUrl}/check-name`, {
 		firstName,
@@ -34,6 +39,7 @@ export default {
 	getAll,
 	getOne,
 	create,
+	update,
 	checkName,
 	deleteOne,
 }
