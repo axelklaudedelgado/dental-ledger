@@ -33,6 +33,8 @@ import {
 
 import { Spinner } from '../ui/extensions/spinner'
 
+import OverflowTooltip from '../ui/extensions/overflow-tooltip'
+
 export function DataTable({ columns, data, isLoading, error, type = null }) {
 	const navigate = useNavigate()
 
@@ -107,24 +109,10 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 		>
 			{row.getVisibleCells().map((cell) => (
 				<TableCell key={cell.id}>
-					{cell.column.id === 'address' ? (
-						<TooltipProvider>
-							<Tooltip>
-								<TooltipTrigger>
-									<span className="block max-w-[200px] truncate">
-										{cell.getValue()}
-									</span>
-								</TooltipTrigger>
-								<TooltipContent>
-									<p>{cell.getValue()}</p>
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
+					{['address', 'fullName'].includes(cell.column.id) ? (
+						<OverflowTooltip text={cell.getValue()} />
 					) : (
-						flexRender(
-							cell.column.columnDef.cell,
-							cell.getContext(),
-						)
+						flexRender(cell.column.columnDef.cell, cell.getContext())
 					)}
 				</TableCell>
 			))}
