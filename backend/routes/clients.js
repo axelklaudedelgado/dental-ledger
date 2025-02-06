@@ -8,6 +8,7 @@ router.get('/', async (req, res) => {
 		clients.map((client) => ({
 			...client.toJSON(),
 			fullName: client.fullName,
+			slugName: client.slugName,
 		})),
 	)
 })

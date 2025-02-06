@@ -55,6 +55,14 @@ Client.init(
 				}
 				return `${this.firstName} ${this.lastName}`.trim()
 			},
+
+			slugName() {
+				const name = `${this.firstName} ${this.lastName}`
+				return name
+					.toLowerCase()
+					.replace(/\./g, '')
+					.replace(/\s+/g, '_')
+			},
 		},
 	},
 )

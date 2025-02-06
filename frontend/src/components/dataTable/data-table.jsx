@@ -105,14 +105,20 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 				'cursor-pointer',
 				isPinned && 'bg-yellow-100 animate-pulse',
 			)}
-			onClick={() => navigate(`/${type}/${row.original.id}`)}
+			onClick={() => {
+				const { id, slugName } = row.original
+				navigate(`/${type}/${id}/${slugName}`)
+			}}
 		>
 			{row.getVisibleCells().map((cell) => (
 				<TableCell key={cell.id}>
 					{['address', 'fullName'].includes(cell.column.id) ? (
 						<OverflowTooltip text={cell.getValue()} />
 					) : (
-						flexRender(cell.column.columnDef.cell, cell.getContext())
+						flexRender(
+							cell.column.columnDef.cell,
+							cell.getContext(),
+						)
 					)}
 				</TableCell>
 			))}
