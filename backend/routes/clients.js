@@ -7,7 +7,6 @@ router.get('/', async (req, res) => {
 	res.json(
 		clients.map((client) => ({
 			...client.toJSON(),
-			fullName: client.fullName,
 			slugName: client.slugName,
 		})),
 	)
@@ -113,7 +112,6 @@ router.put('/:id', async (req, res) => {
 	res.status(200).json({
 		client: {
 			...client.toJSON(),
-			fullName: client.fullName,
 		},
 	})
 })

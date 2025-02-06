@@ -23,6 +23,15 @@ Client.init(
 			type: DataTypes.STRING,
 			allowNull: false,
 		},
+		fullName: {
+			type: DataTypes.VIRTUAL,
+			get() {
+				if (this.title) {
+					return `${this.title} ${this.firstName} ${this.lastName}`.trim()
+				}
+				return `${this.firstName} ${this.lastName}`.trim()
+			},
+		},
 		address: {
 			type: DataTypes.STRING,
 			allowNull: false,
@@ -49,13 +58,6 @@ Client.init(
 		timestamps: true,
 		modelName: 'client',
 		getterMethods: {
-			fullName() {
-				if (this.title) {
-					return `${this.title} ${this.firstName} ${this.lastName}`.trim()
-				}
-				return `${this.firstName} ${this.lastName}`.trim()
-			},
-
 			slugName() {
 				const name = `${this.firstName} ${this.lastName}`
 				return name
