@@ -122,7 +122,13 @@ router.post('/', async (req, res) => {
 			}
 		}
 
-		const joNumber = await Transaction.generateJONumber()
+		const lastTransaction = await Transaction.findOne({
+			order: [['joNumber', 'DESC']],
+			lock: t.LOCK.UPDATE,
+			transaction: t,
+		})
+
+		const joNumber = lastTransaction ? lastTransaction.joNumber + 1 : 1
 
 		const newTransaction = await Transaction.create(
 			{

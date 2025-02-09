@@ -2,14 +2,7 @@ const { Model, DataTypes } = require('sequelize')
 
 const { sequelize } = require('../utils/db')
 
-class Transaction extends Model {
-	static async generateJONumber() {
-		const lastTransaction = await Transaction.findOne({
-			order: [['createdAt', 'DESC']],
-		})
-		return lastTransaction ? lastTransaction.joNumber + 1 : 1
-	}
-}
+class Transaction extends Model {}
 
 Transaction.init(
 	{
@@ -22,7 +15,6 @@ Transaction.init(
 			type: DataTypes.INTEGER,
 			allowNull: false,
 			unique: true,
-			defaultValue: 1,
 		},
 		date: {
 			type: DataTypes.DATEONLY,
