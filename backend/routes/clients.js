@@ -1,13 +1,18 @@
 const router = require('express').Router()
 const { Op } = require('sequelize')
 const { Client, Transaction, Particular } = require('../models')
+const generateClientSlug = require('../utils/generateClientSlug')
 
 router.get('/', async (req, res) => {
 	const clients = await Client.findAll()
 	res.json(
 		clients.map((client) => ({
 			...client.toJSON(),
-			slugName: client.slugName,
+			slugName: generateClientSlug(
+				client.firstName,
+				client.lastName,
+				client.id,
+			),
 		})),
 	)
 })
@@ -96,7 +101,14 @@ router.post('/', async (req, res) => {
 		lastName,
 		address,
 	})
-	res.json(newClient)
+	res.json({
+		...newClient.toJSON(),
+		slugName: generateClientSlug(
+			newClient.firstName,
+			newClient.lastName,
+			newClient.id,
+		),
+	})
 })
 
 router.put('/:id', async (req, res) => {
@@ -112,6 +124,11 @@ router.put('/:id', async (req, res) => {
 	res.status(200).json({
 		client: {
 			...client.toJSON(),
+			slugName: generateClientSlug(
+				client.firstName,
+				client.lastName,
+				client.id,
+			),
 		},
 	})
 })

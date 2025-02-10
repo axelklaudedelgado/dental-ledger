@@ -57,15 +57,6 @@ Client.init(
 		underscored: true,
 		timestamps: true,
 		modelName: 'client',
-		getterMethods: {
-			slugName() {
-				const name = `${this.firstName} ${this.lastName}`
-				return name
-					.toLowerCase()
-					.replace(/\./g, '')
-					.replace(/\s+/g, '_')
-			},
-		},
 	},
 )
 

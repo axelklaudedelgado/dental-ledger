@@ -4,9 +4,11 @@ import { useSelector, useDispatch } from 'react-redux'
 import { fetchClientDetails } from '../reducers/clientSlice'
 import { TransactionTable } from './TransactionTable'
 import BackButton from './BackButton'
+import decodeClientSlug from '../utils/decodeClientSlug'
 
 export const ClientTransactions = () => {
-	const { id } = useParams()
+	const { slugName } = useParams()
+	const id = decodeClientSlug(slugName)
 	const dispatch = useDispatch()
 
 	const { selectedClient, clientDetailsStatus, clientDetailsError } =

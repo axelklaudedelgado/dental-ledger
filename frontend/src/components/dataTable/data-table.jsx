@@ -106,8 +106,8 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 				isPinned && 'bg-yellow-100 animate-pulse',
 			)}
 			onClick={() => {
-				const { id, slugName } = row.original
-				navigate(`/${type}/${id}/${slugName}`)
+				const { slugName } = row.original
+				navigate(`/${type}/${slugName}`)
 			}}
 		>
 			{row.getVisibleCells().map((cell) => (
