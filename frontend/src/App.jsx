@@ -9,6 +9,8 @@ import Wrapper from './components/Wrapper'
 import { ClientTable } from './components/ClientTable'
 import { ClientTransactions } from './components/ClientTransactions'
 
+import TransactionForm from './components/TransactionForm'
+
 function App() {
 	const dispatch = useDispatch()
 	const { clients, clientsStatus, clientsError } = useSelector(
@@ -36,6 +38,10 @@ function App() {
 					<Route
 						path="/client/:slugName"
 						element={<ClientTransactions />}
+					/>
+					<Route
+						path="/client/:slugName/transaction/add"
+						element={<TransactionForm />}
 					/>
 				</Route>
 			</Routes>
