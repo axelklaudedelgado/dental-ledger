@@ -15,6 +15,8 @@ import {
 	useReactTable,
 } from '@tanstack/react-table'
 
+import { Button } from '@/components/ui/button'
+
 import {
 	Table,
 	TableBody,
@@ -134,12 +136,23 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 					clientFilter={type === 'client'}
 				/>
 				<DataTableViewOptions table={table} />
-				{type === 'client' && (
+				{type === 'client' ? (
 					<ClientForm
 						onClientAdded={(newClientId) =>
 							setHighlightedRow(newClientId)
 						}
 					/>
+				) : (
+					<Button
+						variant="outline"
+						size="sm"
+						className="ml-2 hidden h-8 lg:flex"
+						onClick={() =>
+							navigate(`${location.pathname}/transaction/add`)
+						}
+					>
+						Add Transaction
+					</Button>
 				)}
 			</div>
 			<div className="rounded-md border">
