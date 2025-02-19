@@ -22,7 +22,14 @@ router.get('/:id', async (req, res) => {
 
 	const client = await Client.findOne({
 		where: { id },
-		attributes: ['id', 'title', 'firstName', 'lastName', 'address'],
+		attributes: [
+			'id',
+			'title',
+			'firstName',
+			'lastName',
+			'address',
+			'totalBalance',
+		],
 		include: [
 			{
 				model: Transaction,
@@ -88,6 +95,7 @@ router.get('/:id', async (req, res) => {
 		client: {
 			fullName: client.fullName,
 			address: client.address,
+			totalBalance: Number(client.totalBalance),
 		},
 		transactions: formattedTransactions,
 	})
