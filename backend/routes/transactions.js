@@ -25,6 +25,15 @@ router.get('/', async (req, res) => {
 	res.status(200).json(transactions)
 })
 
+router.get('/next-jo-number', async (req, res) => {
+	const lastTransaction = await Transaction.findOne({
+		order: [['joNumber', 'DESC']],
+	})
+
+	const nextJONumber = lastTransaction ? lastTransaction.joNumber + 1 : 1
+	res.json({ nextJONumber })
+})
+
 router.get('/:id', async (req, res) => {
 	const { id } = req.params
 
