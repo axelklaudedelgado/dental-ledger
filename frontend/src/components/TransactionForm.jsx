@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import {
 	Check,
@@ -53,14 +53,7 @@ const createSchema = (selectedClient) => {
 		date: yup
 			.date()
 			.required('Date is required')
-			.transform((value) => {
-				if (!value) return value
-				return new Date(value.toDateString())
-			})
-			.max(
-				new Date(new Date().toDateString()),
-				'Date cannot be in the future',
-			),
+			.max(new Date(), 'Date cannot be in the future'),
 		particulars: yup
 			.array()
 			.of(
@@ -167,20 +160,16 @@ const createSchema = (selectedClient) => {
 	})
 }
 
-const TransactionForm = ({ initialData = null }) => {
+const TransactionForm = ({ initialData }) => {
 	const [openComboboxes, setOpenComboboxes] = useState({})
 	const [services, setServices] = useState([])
 	const [nextJONumber, setNextJONumber] = useState(null)
 
 	const { slugName } = useParams()
-	const location = useLocation()
-	const navigate = useNavigate()
 	const id = decodeClientSlug(slugName)
 	const dispatch = useDispatch()
 
 	const { selectedClient } = useSelector((state) => state.clients)
-
-	initialData = location.state || null
 
 	useEffect(() => {
 		dispatch(fetchClientDetails(id))
@@ -365,14 +354,7 @@ const TransactionForm = ({ initialData = null }) => {
 			totalAmount,
 			totalPayment,
 			balance,
-			clientTotalBalance: selectedClient?.totalBalance || 0,
-			projectedClientBalance:
-				(selectedClient?.totalBalance || 0) + balance,
 		}
-
-		const currentPath = location.pathname
-		const newPath = currentPath.replace('/add', '/review')
-		navigate(newPath, { state: transaction })
 	}
 
 	return (
@@ -422,26 +404,11 @@ const TransactionForm = ({ initialData = null }) => {
 												<Calendar
 													mode="single"
 													selected={field.value}
-													onSelect={(date) => {
-														if (date) {
-															field.onChange(date)
-														}
-													}}
+													onSelect={field.onChange}
 													disabled={(date) =>
-														date >
-														new Date(
-															new Date().toDateString(),
-														)
+														date > new Date()
 													}
 													initialFocus
-													classNames={{
-														day_selected:
-															'bg-zinc-900 text-white hover:bg-zinc-900 hover:text-white focus:bg-zinc-900 focus:text-white',
-														day_disabled:
-															'text-muted-foreground opacity-50 hover:bg-transparent hover:text-muted-foreground',
-														day_today:
-															'bg-accent text-accent-foreground',
-													}}
 												/>
 											</PopoverContent>
 										</Popover>
