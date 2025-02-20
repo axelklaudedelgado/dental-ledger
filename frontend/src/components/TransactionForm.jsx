@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import {
 	Check,
@@ -160,16 +160,20 @@ const createSchema = (selectedClient) => {
 	})
 }
 
-const TransactionForm = ({ initialData }) => {
+const TransactionForm = ({ initialData = null }) => {
 	const [openComboboxes, setOpenComboboxes] = useState({})
 	const [services, setServices] = useState([])
 	const [nextJONumber, setNextJONumber] = useState(null)
 
 	const { slugName } = useParams()
+	const location = useLocation()
+	const navigate = useNavigate()
 	const id = decodeClientSlug(slugName)
 	const dispatch = useDispatch()
 
 	const { selectedClient } = useSelector((state) => state.clients)
+
+	initialData = location.state || null
 
 	useEffect(() => {
 		dispatch(fetchClientDetails(id))
@@ -354,7 +358,14 @@ const TransactionForm = ({ initialData }) => {
 			totalAmount,
 			totalPayment,
 			balance,
+			clientTotalBalance: selectedClient?.totalBalance || 0,
+			projectedClientBalance:
+				(selectedClient?.totalBalance || 0) + balance,
 		}
+
+		const currentPath = location.pathname
+		const newPath = currentPath.replace('/add', '/review')
+		navigate(newPath, { state: transaction })
 	}
 
 	return (
