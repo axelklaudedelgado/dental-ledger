@@ -12,14 +12,16 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Spinner } from './ui/extensions/spinner'
 import { format } from 'date-fns'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, AlertCircle } from 'lucide-react'
 import transactionService from '../services/transactionService'
 
 const TransactionReview = () => {
 	const location = useLocation()
 	const navigate = useNavigate()
+	const currentPath = location.pathname
 	const [isSubmitted, setIsSubmitted] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
+	const [error, setError] = useState(null)
 	const transaction = location.state
 
 	if (!transaction) {
@@ -31,9 +33,7 @@ const TransactionReview = () => {
 	}
 
 	const handleEdit = () => {
-		const currentPath = location.pathname
 		const newPath = currentPath.replace('/review', '/add')
-
 		navigate(newPath, { state: transaction })
 	}
 
@@ -44,27 +44,36 @@ const TransactionReview = () => {
 	const remainingClientBalance = transaction.clientTotalBalance - overpayment
 
 	const onSubmit = async () => {
-		const { clientId, date, remarks, particulars } = transaction
+		try {
+			setIsLoading(true)
+			setError(null)
+			const { clientId, date, remarks, particulars } = transaction
 
-		const newTransaction = {
-			clientId: clientId,
-			date: date,
-			remarks: remarks === '' ? null : remarks,
-			particulars: particulars.map((p) => ({
-				particularId: p.particularId,
-				units: p.type === 'Service' ? Number(p.units) : null,
-				unitPrice: Number(p.unitPrice),
-			})),
+			const newTransaction = {
+				clientId: clientId,
+				date: date,
+				remarks: remarks === '' ? null : remarks,
+				particulars: particulars.map((p) => ({
+					particularId: p.particularId,
+					units: p.type === 'Service' ? Number(p.units) : null,
+					unitPrice: Number(p.unitPrice),
+				})),
+			}
+
+			await transactionService.createTransaction(newTransaction)
+			setIsSubmitted(true)
+		} catch (err) {
+			setError(
+				err.message ||
+					'An error occurred while creating the transaction.',
+			)
+		} finally {
+			setIsLoading(false)
 		}
-
-		await transactionService.createTransaction(newTransaction)
-		setIsSubmitted(true)
 	}
 
 	const handleBackToClientTransactions = () => {
-		const currentPath = location.pathname
 		const newPath = currentPath.replace('/transaction/review', '')
-
 		navigate(newPath)
 	}
 
@@ -153,23 +162,49 @@ const TransactionReview = () => {
 			</CardHeader>
 			<CardContent>
 				<ScrollArea className="h-[60vh] pr-4">
-					{isSubmitted && (
-						<Alert className="mb-6 bg-emerald-50 border-emerald-200">
-							<div className="flex items-start gap-4">
-								<CheckCircle2 className="h-6 w-6 text-emerald-500 mt-1" />
-								<div>
-									<AlertTitle className="text-lg font-semibold text-emerald-800">
-										Success
-									</AlertTitle>
-									<AlertDescription className="text-emerald-700">
-										Transaction has been successfully
-										created and recorded.
-									</AlertDescription>
-								</div>
-							</div>
-						</Alert>
+					{isLoading ? (
+						<div className="h-full flex items-center justify-center">
+							<Spinner size="large">
+								Creating Transaction...
+							</Spinner>
+						</div>
+					) : (
+						<>
+							{error && (
+								<Alert className="mb-6 bg-red-50 border-red-200">
+									<div className="flex items-start gap-4">
+										<AlertCircle className="h-6 w-6 text-red-500 mt-1" />
+										<div>
+											<AlertTitle className="text-lg font-semibold text-red-800">
+												Error
+											</AlertTitle>
+											<AlertDescription className="text-red-700">
+												{error}
+											</AlertDescription>
+										</div>
+									</div>
+								</Alert>
+							)}
+							{isSubmitted && (
+								<Alert className="mb-6 bg-emerald-50 border-emerald-200">
+									<div className="flex items-start gap-4">
+										<CheckCircle2 className="h-6 w-6 text-emerald-500 mt-1" />
+										<div>
+											<AlertTitle className="text-lg font-semibold text-emerald-800">
+												Success
+											</AlertTitle>
+											<AlertDescription className="text-emerald-700">
+												Transaction has been
+												successfully created and
+												recorded.
+											</AlertDescription>
+										</div>
+									</div>
+								</Alert>
+							)}
+							{renderContent()}
+						</>
 					)}
-					{renderContent()}
 				</ScrollArea>
 			</CardContent>
 			<CardFooter className="flex justify-between">
@@ -187,10 +222,20 @@ const TransactionReview = () => {
 					</>
 				) : (
 					<>
-						<Button variant="outline" onClick={handleEdit}>
+						<Button
+							variant="outline"
+							onClick={handleEdit}
+							disabled={isLoading}
+						>
 							Edit
 						</Button>
-						<Button onClick={onSubmit}>Confirm and Submit</Button>
+						<Button onClick={onSubmit} disabled={isLoading}>
+							{isLoading
+								? 'Creating...'
+								: error
+									? 'Retry Submission'
+									: 'Confirm and Submit'}
+						</Button>
 					</>
 				)}
 			</CardFooter>
