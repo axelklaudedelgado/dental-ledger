@@ -10,6 +10,7 @@ import { ClientTable } from './components/ClientTable'
 import { ClientTransactions } from './components/ClientTransactions'
 
 import TransactionForm from './components/TransactionForm'
+import TransactionReview from './components/TransactionReview'
 
 function App() {
 	const dispatch = useDispatch()
@@ -42,6 +43,10 @@ function App() {
 					<Route
 						path="/client/:slugName/transaction/add"
 						element={<TransactionForm />}
+					/>
+					<Route
+						path="/client/:slugName/transaction/review"
+						element={<TransactionReview />}
 					/>
 				</Route>
 			</Routes>
