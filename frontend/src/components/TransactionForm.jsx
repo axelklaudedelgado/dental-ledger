@@ -53,7 +53,14 @@ const createSchema = (selectedClient) => {
 		date: yup
 			.date()
 			.required('Date is required')
-			.max(new Date(), 'Date cannot be in the future'),
+			.transform((value) => {
+				if (!value) return value
+				return new Date(value.toDateString())
+			})
+			.max(
+				new Date(new Date().toDateString()),
+				'Date cannot be in the future',
+			),
 		particulars: yup
 			.array()
 			.of(
@@ -415,11 +422,26 @@ const TransactionForm = ({ initialData = null }) => {
 												<Calendar
 													mode="single"
 													selected={field.value}
-													onSelect={field.onChange}
+													onSelect={(date) => {
+														if (date) {
+															field.onChange(date)
+														}
+													}}
 													disabled={(date) =>
-														date > new Date()
+														date >
+														new Date(
+															new Date().toDateString(),
+														)
 													}
 													initialFocus
+													classNames={{
+														day_selected:
+															'bg-zinc-900 text-white hover:bg-zinc-900 hover:text-white focus:bg-zinc-900 focus:text-white',
+														day_disabled:
+															'text-muted-foreground opacity-50 hover:bg-transparent hover:text-muted-foreground',
+														day_today:
+															'bg-accent text-accent-foreground',
+													}}
 												/>
 											</PopoverContent>
 										</Popover>
