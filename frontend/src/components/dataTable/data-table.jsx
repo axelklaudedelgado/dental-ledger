@@ -26,13 +26,6 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from '@/components/ui/tooltip'
-
 import { Spinner } from '../ui/extensions/spinner'
 
 import OverflowTooltip from '../ui/extensions/overflow-tooltip'
@@ -51,6 +44,26 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 	const [globalFilter, setGlobalFilter] = React.useState('')
 	const [highlightedRow, setHighlightedRow] = React.useState(null)
 
+	const processedData = React.useMemo(() => {
+		const groupedByDate = data.reduce((acc, curr) => {
+			const date = curr.date
+			if (!acc[date]) {
+				acc[date] = []
+			}
+			acc[date].push(curr)
+			return acc
+		}, {})
+
+		return Object.values(groupedByDate).flatMap((group) => {
+			if (group.length > 1) {
+				return group.sort(
+					(a, b) => Number(b.joNumber) - Number(a.joNumber),
+				)
+			}
+			return group
+		})
+	}, [data])
+
 	React.useEffect(() => {
 		if (highlightedRow) {
 			const timeout = setTimeout(() => {
@@ -66,8 +79,8 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 	}, [data, highlightedRow])
 
 	const tableData = React.useMemo(() => {
-		return data.filter((row) => row.id !== highlightedRow)
-	}, [data, highlightedRow])
+		return processedData.filter((row) => row.id !== highlightedRow)
+	}, [processedData, highlightedRow])
 
 	const table = useReactTable({
 		data: tableData,

@@ -1,5 +1,13 @@
 import { DataTableColumnHeader } from '../components/data-table-column-header'
 
+const formatCurrency = (amount) => {
+	if (!amount && amount !== 0) return ''
+	return new Intl.NumberFormat('en-PH', {
+		style: 'currency',
+		currency: 'PHP',
+	}).format(amount)
+}
+
 export const transactionColumns = [
 	{
 		accessorKey: 'joNumber',
@@ -21,9 +29,11 @@ export const transactionColumns = [
 			<DataTableColumnHeader column={column} title="Particulars" />
 		),
 		cell: ({ row }) => (
-			<div>
+			<div className="space-y-1">
 				{row.original.particulars.map((particular, index) => (
-					<div key={index}>{particular}</div>
+					<div key={index} className="min-h-6">
+						{particular}
+					</div>
 				))}
 			</div>
 		),
@@ -34,18 +44,22 @@ export const transactionColumns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Unit Price" />
 		),
-		cell: ({ row }) => (
-			<div>
-				{row.original.unitPrices.map((unitPrice, index) => (
-					<div key={index}>
-						{new Intl.NumberFormat('en-PH', {
-							style: 'currency',
-							currency: 'PHP',
-						}).format(unitPrice)}
-					</div>
-				))}
-			</div>
-		),
+		cell: ({ row }) => {
+			const particulars = row.original.particulars
+			const unitPrices = row.original.unitPrices || []
+
+			return (
+				<div className="space-y-1">
+					{particulars.map((particular, index) => (
+						<div key={index} className="min-h-6">
+							{particular.toLowerCase() !== 'payment'
+								? formatCurrency(unitPrices[index])
+								: ''}
+						</div>
+					))}
+				</div>
+			)
+		},
 		sortDescFirst: false,
 	},
 	{
@@ -54,12 +68,7 @@ export const transactionColumns = [
 			<DataTableColumnHeader column={column} title="Amount" />
 		),
 		cell: ({ row }) => (
-			<div>
-				{new Intl.NumberFormat('en-PH', {
-					style: 'currency',
-					currency: 'PHP',
-				}).format(row.original.amount)}
-			</div>
+			<div className="min-h-6">{formatCurrency(row.original.amount)}</div>
 		),
 		sortDescFirst: false,
 	},
@@ -68,14 +77,24 @@ export const transactionColumns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Payment" />
 		),
-		cell: ({ row }) => (
-			<div>
-				{new Intl.NumberFormat('en-PH', {
-					style: 'currency',
-					currency: 'PHP',
-				}).format(row.original.payment)}
-			</div>
-		),
+		cell: ({ row }) => {
+			const particulars = row.original.particulars
+			const paymentIndex = particulars.findIndex(
+				(p) => p.toLowerCase() === 'payment',
+			)
+
+			return (
+				<div className="space-y-1">
+					{particulars.map((_, index) => (
+						<div key={index} className="min-h-6">
+							{index === paymentIndex
+								? formatCurrency(row.original.payment)
+								: ''}
+						</div>
+					))}
+				</div>
+			)
+		},
 		sortDescFirst: false,
 	},
 	{

@@ -56,26 +56,29 @@ router.get('/:id', async (req, res) => {
 		let totalAmount = 0
 		let totalPayments = 0
 
-		const formattedParticulars = particulars.map((particular) => {
+		const regularItems = []
+		const payments = []
+		const regularUnitPrices = []
+
+		particulars.forEach((particular) => {
 			const { units, unitPrice } = particular.transactionParticular
 			const isPayment = particular.type === 'Payment'
 
-			if (!isPayment) {
-				totalAmount += units * unitPrice
-			} else {
-				totalPayments += parseFloat(unitPrice)
-			}
-
 			if (isPayment) {
-				return particular.name
+				totalPayments += parseFloat(unitPrice)
+				payments.push('Payment')
 			} else {
-				return `${units} units ${particular.name}`
+				totalAmount += units * unitPrice
+				regularItems.push(
+					`${units} ${units > 1 ? 'units' : 'unit'} ${particular.name}`,
+				)
+				regularUnitPrices.push(unitPrice)
 			}
 		})
 
-		const unitPrices = particulars.map(
-			(particular) => particular.transactionParticular.unitPrice,
-		)
+		const formattedParticulars = [...regularItems, ...payments]
+
+		const unitPrices = regularUnitPrices
 
 		const balance = Math.max(totalAmount - totalPayments, 0)
 
