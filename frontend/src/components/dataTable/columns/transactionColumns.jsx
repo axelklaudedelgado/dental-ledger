@@ -1,4 +1,5 @@
 import { DataTableColumnHeader } from '../components/data-table-column-header'
+import { TableRowActions } from '../components/data-table-row-actions'
 
 const formatCurrency = (amount) => {
 	if (!amount && amount !== 0) return ''
@@ -117,5 +118,9 @@ export const transactionColumns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} title="Remarks" />
 		),
+	},
+	{
+		id: 'actions',
+		cell: ({ row }) => <TableRowActions row={row} type="transaction" />,
 	},
 ]
