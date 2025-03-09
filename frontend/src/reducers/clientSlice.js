@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import clientService from '../services/clientService'
+import transactionService from '../services/transactionService'
 
 export const fetchClients = createAsyncThunk('clients/fetchAll', async () => {
 	const clients = await clientService.getAll()
@@ -43,6 +44,14 @@ export const deleteClient = createAsyncThunk(
 	async (clientId) => {
 		await clientService.deleteOne(clientId)
 		return clientId
+	},
+)
+
+export const deleteTransaction = createAsyncThunk(
+	'transactions/delete',
+	async (transactionId) => {
+		await transactionService.deleteOne(transactionId)
+		return transactionId
 	},
 )
 
@@ -105,6 +114,14 @@ const clientSlice = createSlice({
 				state.clients = state.clients.filter(
 					(client) => client.id !== action.payload,
 				)
+			})
+
+			// Delete a single transaction
+			.addCase(deleteTransaction.fulfilled, (state, action) => {
+				state.selectedClient.transactions =
+					state.selectedClient.transactions.filter(
+						(transaction) => transaction.id !== action.payload,
+					)
 			})
 	},
 })

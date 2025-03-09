@@ -12,4 +12,9 @@ const nextJONumber = async () => {
 	return response.data
 }
 
-export default { createTransaction, nextJONumber }
+const deleteOne = async (id) => {
+	const response = await axios.delete(`${baseUrl}/${id}`)
+	return response.data
+}
+
+export default { createTransaction, nextJONumber, deleteOne }
