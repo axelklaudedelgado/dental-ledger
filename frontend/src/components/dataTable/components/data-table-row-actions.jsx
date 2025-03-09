@@ -28,7 +28,9 @@ import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { useToast } from '../../ui/hooks/use-toast'
 
-import { deleteClient } from '@/reducers/clientSlice'
+import { deleteClient, deleteTransaction } from '@/reducers/clientSlice'
+
+import transactionService from '@/services/transactionService'
 
 export function TableRowActions({ row, type }) {
 	const navigate = useNavigate()
@@ -39,24 +41,30 @@ export function TableRowActions({ row, type }) {
 	const [updateFormOpen, setUpdateFormOpen] = useState(false)
 
 	const handleDelete = async () => {
-		if (type === 'client') {
-			const clientId = row.original.id
-			const clientName = row.original.fullName
+		const id = row.original.id
 
-			try {
-				await dispatch(deleteClient(clientId)).unwrap()
+		try {
+			if (type === 'client') {
+				await dispatch(deleteClient(id)).unwrap()
 				toast({
 					variant: 'destructive',
 					title: 'Client Deleted',
-					description: `The client ${clientName} has been successfully deleted.`,
+					description: `The client ${row.original.fullName} has been successfully deleted.`,
 				})
-			} catch (error) {
+			} else if (type === 'transaction') {
+				await dispatch(deleteTransaction(id)).unwrap()
 				toast({
 					variant: 'destructive',
-					title: 'Error',
-					description: `Failed to delete client ${clientName}. Please try again.`,
+					title: 'Transaction Deleted',
+					description: `Transaction #${row.original.joNumber} has been successfully deleted.`,
 				})
 			}
+		} catch (error) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: `Failed to delete ${type}. Please try again.`,
+			})
 		}
 		setDeleteDialogOpen(false)
 	}
@@ -121,15 +129,19 @@ export function TableRowActions({ row, type }) {
 						<AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
 						<AlertDialogDescription>
 							You are about to delete this {type}:{' '}
-							<strong>{row.original.fullName}</strong>
+							<strong>
+								{type === 'client'
+									? row.original.fullName
+									: `Transaction #${row.original.joNumber}`}
+							</strong>
 							<br />
 							<br />
-							Please be aware that this action is irreversible.
-							Deleting this {type.slice(0, -1)} will also remove
-							all associated records.
+							{type === 'client'
+								? 'This action is irreversible. Deleting this client will also remove all associated records.'
+								: 'This action is irreversible. Deleting this transaction may affect the client’s balance.'}
 							<br />
 							<br />
-							Are you sure you want to proceed with this deletion?
+							Are you sure you want to proceed?
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
