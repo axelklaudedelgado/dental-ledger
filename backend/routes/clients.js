@@ -51,7 +51,7 @@ router.get('/:id', async (req, res) => {
 	}
 
 	const formattedTransactions = client.transactions.map((transaction) => {
-		const { joNumber, date, remarks, particulars } = transaction
+		const { joNumber, date, remarks, particulars, id } = transaction
 
 		let totalAmount = 0
 		let totalPayments = 0
@@ -83,6 +83,7 @@ router.get('/:id', async (req, res) => {
 		const balance = Math.max(totalAmount - totalPayments, 0)
 
 		return {
+			id,
 			joNumber,
 			date,
 			particulars: formattedParticulars,
