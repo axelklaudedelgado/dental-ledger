@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +15,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import transactionService from '../services/transactionService'
 
+const TRANSACTION_STORAGE_KEY = 'pending_transaction_data'
+const TRANSACTION_SUBMITTED_KEY = 'transaction_submitted'
+
 const TransactionReview = () => {
 	const location = useLocation()
 	const navigate = useNavigate()
@@ -22,7 +25,59 @@ const TransactionReview = () => {
 	const [isSubmitted, setIsSubmitted] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState(null)
-	const transaction = location.state
+	const [transaction, setTransaction] = useState(null)
+	const clientTransactionsPath = currentPath.replace(
+		'/transaction/review',
+		'',
+	)
+
+	useEffect(() => {
+		const wasSubmitted =
+			sessionStorage.getItem(TRANSACTION_SUBMITTED_KEY) === 'true'
+		if (wasSubmitted) {
+			setIsSubmitted(true)
+		}
+	}, [])
+
+	useEffect(() => {
+		const handlePopState = (event) => {
+			if (isSubmitted) {
+				navigate(clientTransactionsPath, { replace: true })
+			}
+		}
+
+		window.addEventListener('popstate', handlePopState)
+
+		return () => {
+			window.removeEventListener('popstate', handlePopState)
+		}
+	}, [isSubmitted, navigate, clientTransactionsPath])
+
+	useEffect(() => {
+		if (location.state) {
+			setTransaction(location.state)
+			sessionStorage.setItem(
+				TRANSACTION_STORAGE_KEY,
+				JSON.stringify(location.state),
+			)
+		} else {
+			const savedTransaction = sessionStorage.getItem(
+				TRANSACTION_STORAGE_KEY,
+			)
+			if (savedTransaction) {
+				setTransaction(JSON.parse(savedTransaction))
+			}
+		}
+	}, [location.state])
+
+	useEffect(() => {
+		if (isSubmitted) {
+			sessionStorage.setItem(TRANSACTION_SUBMITTED_KEY, 'true')
+			sessionStorage.removeItem(TRANSACTION_STORAGE_KEY)
+
+			navigate(currentPath, { replace: true })
+		}
+	}, [isSubmitted, navigate, currentPath])
 
 	if (!transaction) {
 		return (
@@ -73,8 +128,8 @@ const TransactionReview = () => {
 	}
 
 	const handleBackToClientTransactions = () => {
-		const newPath = currentPath.replace('/transaction/review', '')
-		navigate(newPath)
+		sessionStorage.removeItem(TRANSACTION_SUBMITTED_KEY)
+		navigate(clientTransactionsPath)
 	}
 
 	const renderContent = () => (

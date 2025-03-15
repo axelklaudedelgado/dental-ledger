@@ -167,6 +167,8 @@ const createSchema = (selectedClient) => {
 	})
 }
 
+const TRANSACTION_STORAGE_KEY = 'pending_transaction_data'
+
 const TransactionForm = ({ initialData = null }) => {
 	const [openComboboxes, setOpenComboboxes] = useState({})
 	const [services, setServices] = useState([])
@@ -174,13 +176,31 @@ const TransactionForm = ({ initialData = null }) => {
 
 	const { slugName } = useParams()
 	const location = useLocation()
+	const prevLocation = location.pathname.replace('/transaction/add', '')
 	const navigate = useNavigate()
 	const id = decodeClientSlug(slugName)
 	const dispatch = useDispatch()
 
 	const { selectedClient } = useSelector((state) => state.clients)
 
-	initialData = location.state || null
+	const getInitialData = () => {
+		if (location.state) {
+			return location.state
+		}
+
+		const savedTransaction = sessionStorage.getItem(TRANSACTION_STORAGE_KEY)
+		if (savedTransaction) {
+			try {
+				return JSON.parse(savedTransaction)
+			} catch (e) {
+				console.error('Failed to parse saved transaction data', e)
+			}
+		}
+
+		return null
+	}
+
+	initialData = getInitialData()
 
 	useEffect(() => {
 		dispatch(fetchClientDetails(id))
@@ -197,7 +217,7 @@ const TransactionForm = ({ initialData = null }) => {
 				}))
 				setServices(formattedServices)
 
-				if (!initialData) {
+				if (!initialData && nextJONumber === null) {
 					const data = await transactionService.nextJONumber()
 					setNextJONumber(data.nextJONumber)
 				}
@@ -205,6 +225,7 @@ const TransactionForm = ({ initialData = null }) => {
 				console.error('Error fetching data:', error)
 			}
 		}
+
 		fetchData()
 	}, [initialData])
 
@@ -377,7 +398,11 @@ const TransactionForm = ({ initialData = null }) => {
 
 	return (
 		<>
-			<BackButton />
+			<BackButton
+				navigateRoute={prevLocation}
+				preserveState={false}
+				clearSessionStorage={true}
+			/>
 			<Form {...form}>
 				<form
 					onSubmit={form.handleSubmit(onSubmit)}

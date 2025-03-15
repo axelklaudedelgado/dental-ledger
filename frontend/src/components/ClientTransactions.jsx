@@ -20,7 +20,7 @@ export const ClientTransactions = () => {
 
 	return (
 		<div>
-			<BackButton />
+			<BackButton navigateRoute={'/'} />
 			<h1 className="text-4xl font-bold">Statement of Account</h1>
 			{selectedClient ? (
 				<>
