@@ -1,9 +1,6 @@
-import { useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-
-import { fetchClients } from './reducers/clientSlice'
 
 import Wrapper from './components/Wrapper'
 import { ClientTable } from './components/ClientTable'
@@ -11,25 +8,23 @@ import { ClientTransactions } from './components/ClientTransactions'
 
 import TransactionForm from './components/TransactionForm'
 import TransactionReview from './components/TransactionReview'
+import ClientDataProvider from './components/ClientProvider'
 
 function App() {
-	const dispatch = useDispatch()
-	const { clients, clientsStatus, clientsError } = useSelector(
+	const { clients, clientsStatus, clientsError, lastUpdated } = useSelector(
 		(state) => state.clients,
 	)
 
-	useEffect(() => {
-		dispatch(fetchClients())
-	}, [dispatch])
-
 	return (
 		<Router>
+			<ClientDataProvider />
 			<Routes>
 				<Route element={<Wrapper />}>
 					<Route
 						path="/"
 						element={
 							<ClientTable
+								key={lastUpdated}
 								data={clients}
 								status={clientsStatus}
 								error={clientsError}

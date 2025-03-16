@@ -14,7 +14,7 @@ import { Spinner } from './ui/extensions/spinner'
 import { format } from 'date-fns'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
-import { createTransaction } from '../reducers/clientSlice'
+import { createTransaction, refreshClientList } from '../reducers/clientSlice'
 
 const TRANSACTION_STORAGE_KEY = 'pending_transaction_data'
 const TRANSACTION_SUBMITTED_KEY = 'transaction_submitted'
@@ -118,6 +118,7 @@ const TransactionReview = () => {
 			}
 
 			dispatch(createTransaction(newTransaction)).unwrap()
+			dispatch(refreshClientList())
 			setIsSubmitted(true)
 		} catch (err) {
 			setError(
@@ -131,6 +132,7 @@ const TransactionReview = () => {
 
 	const handleBackToClientTransactions = () => {
 		sessionStorage.removeItem(TRANSACTION_SUBMITTED_KEY)
+		dispatch(refreshClientList())
 		navigate(clientTransactionsPath)
 	}
 

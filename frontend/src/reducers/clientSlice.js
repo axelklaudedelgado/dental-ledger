@@ -73,8 +73,13 @@ const clientSlice = createSlice({
 		clientsError: null,
 		clientDetailsStatus: 'idle',
 		clientDetailsError: null,
+		lastUpdated: Date.now(),
 	},
-	reducers: {},
+	reducers: {
+		refreshClientList: (state) => {
+			state.lastUpdated = Date.now()
+		},
+	},
 	extraReducers: (builder) => {
 		builder
 			// Fetch all clients
