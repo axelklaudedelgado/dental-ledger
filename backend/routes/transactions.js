@@ -6,6 +6,7 @@ const {
 	transactionParticular,
 	Client,
 } = require('../models')
+const formatTransaction = require('../utils/formatTransaction')
 
 router.get('/', async (req, res) => {
 	const transactions = await Transaction.findAll({
@@ -22,7 +23,10 @@ router.get('/', async (req, res) => {
 			},
 		],
 	})
-	res.status(200).json(transactions)
+
+	const formattedTransactions = transactions.map(formatTransaction)
+
+	res.status(200).json(formattedTransactions)
 })
 
 router.get('/next-jo-number', async (req, res) => {
@@ -50,37 +54,10 @@ router.get('/:id', async (req, res) => {
 		return res.status(404).json({ error: 'Transaction not found.' })
 	}
 
-	let totalAmount = 0
-	let totalPayments = 0
-
-	const particulars = transaction.particulars.map((particular) => {
-		const { units, unitPrice } = particular.transactionParticular
-		const isPayment = particular.type === 'Payment'
-
-		if (!isPayment) {
-			totalAmount += units * unitPrice
-		} else {
-			totalPayments += unitPrice
-		}
-
-		return {
-			name: particular.name,
-			units,
-			unitPrice,
-			amount: isPayment ? 0 : units * unitPrice,
-		}
-	})
-
-	const balance = Math.max(totalAmount - totalPayments, 0)
+	const formattedTransaction = formatTransaction(transaction)
 
 	res.json({
-		transaction: {
-			...transaction.toJSON(),
-			particulars,
-			totalAmount,
-			totalPayments,
-			balance,
-		},
+		transaction: formattedTransaction,
 	})
 })
 
@@ -149,13 +126,15 @@ router.post('/', async (req, res) => {
 			{ transaction: t },
 		)
 
-		const transactionParticulars = await Promise.all(
+		await Promise.all(
 			particulars.map(async (particular) => {
 				const { particularId, units = 0, unitPrice } = particular
 
 				const existingParticular = await Particular.findByPk(
 					particularId,
-					{ transaction: t },
+					{
+						transaction: t,
+					},
 				)
 				if (!existingParticular) {
 					throw new Error(
@@ -231,13 +210,32 @@ router.post('/', async (req, res) => {
 			{ transaction: t },
 		)
 
+		const createdTransaction = await Transaction.findByPk(
+			newTransaction.id,
+			{
+				include: [
+					{
+						model: Particular,
+						through: {
+							attributes: ['units', 'unitPrice'],
+						},
+					},
+				],
+				transaction: t,
+			},
+		)
+
+		const formattedTransaction = formatTransaction(createdTransaction)
+
 		await t.commit()
 
 		res.status(201).json({
 			message: 'Transaction created successfully.',
-			transaction: {
-				...newTransaction.toJSON(),
-				particulars: transactionParticulars,
+			transaction: formattedTransaction,
+			client: {
+				fullName: client.fullName,
+				totalBalance,
+				status,
 			},
 		})
 	} catch (error) {
@@ -345,7 +343,13 @@ router.delete('/:id', async (req, res) => {
 
 		await t.commit()
 
-		res.json({ message: 'Transaction deleted and client balance updated.' })
+		res.json({
+			message: 'Transaction deleted and client balance updated.',
+			client: {
+				totalBalance,
+				status,
+			},
+		})
 	} catch (error) {
 		await t.rollback()
 		res.status(500).json({ error: error.message })

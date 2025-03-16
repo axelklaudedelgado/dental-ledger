@@ -2,6 +2,7 @@ const router = require('express').Router()
 const { Op } = require('sequelize')
 const { Client, Transaction, Particular } = require('../models')
 const generateClientSlug = require('../utils/generateClientSlug')
+const formatTransaction = require('../utils/formatTransaction')
 
 router.get('/', async (req, res) => {
 	const clients = await Client.findAll()
@@ -50,50 +51,7 @@ router.get('/:id', async (req, res) => {
 		return res.status(404).json({ error: 'Client not found' })
 	}
 
-	const formattedTransactions = client.transactions.map((transaction) => {
-		const { joNumber, date, remarks, particulars, id } = transaction
-
-		let totalAmount = 0
-		let totalPayments = 0
-
-		const regularItems = []
-		const payments = []
-		const regularUnitPrices = []
-
-		particulars.forEach((particular) => {
-			const { units, unitPrice } = particular.transactionParticular
-			const isPayment = particular.type === 'Payment'
-
-			if (isPayment) {
-				totalPayments += parseFloat(unitPrice)
-				payments.push('Payment')
-			} else {
-				totalAmount += units * unitPrice
-				regularItems.push(
-					`${units} ${units > 1 ? 'units' : 'unit'} ${particular.name}`,
-				)
-				regularUnitPrices.push(unitPrice)
-			}
-		})
-
-		const formattedParticulars = [...regularItems, ...payments]
-
-		const unitPrices = regularUnitPrices
-
-		const balance = Math.max(totalAmount - totalPayments, 0)
-
-		return {
-			id,
-			joNumber,
-			date,
-			particulars: formattedParticulars,
-			unitPrices,
-			amount: totalAmount,
-			payment: totalPayments,
-			balance,
-			remarks: remarks || 'No remarks',
-		}
-	})
+	const formattedTransactions = client.transactions.map(formatTransaction)
 
 	res.status(200).json({
 		client: {
