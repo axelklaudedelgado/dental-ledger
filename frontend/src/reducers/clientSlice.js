@@ -47,6 +47,15 @@ export const deleteClient = createAsyncThunk(
 	},
 )
 
+export const createTransaction = createAsyncThunk(
+	'transactions/create',
+	async (newTransaction) => {
+		const response =
+			await transactionService.createTransaction(newTransaction)
+		return response
+	},
+)
+
 export const deleteTransaction = createAsyncThunk(
 	'transactions/delete',
 	async (transactionId) => {
@@ -116,6 +125,34 @@ const clientSlice = createSlice({
 				)
 			})
 
+			// Create a transaction
+			.addCase(createTransaction.fulfilled, (state, action) => {
+				state.selectedClient.transactions.push(
+					action.payload.transaction,
+				)
+
+				if (action.payload.client) {
+					state.selectedClient.totalBalance =
+						action.payload.client.totalBalance
+					state.selectedClient.status = action.payload.client.status
+
+					if (state.selectedClient && state.selectedClient.id) {
+						state.clients = state.clients.map((client) =>
+							client.id === state.selectedClient.id
+								? {
+										...client,
+										totalBalance:
+											action.payload.client.totalBalance,
+										status: action.payload.client.status,
+									}
+								: client,
+						)
+
+						state.lastUpdated = Date.now()
+					}
+				}
+			})
+
 			// Delete a single transaction
 			.addCase(deleteTransaction.fulfilled, (state, action) => {
 				state.selectedClient.transactions =
@@ -126,4 +163,5 @@ const clientSlice = createSlice({
 	},
 })
 
+export const { refreshClientList } = clientSlice.actions
 export default clientSlice.reducer

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useDispatch } from 'react-redux'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,7 +14,7 @@ import { Spinner } from './ui/extensions/spinner'
 import { format } from 'date-fns'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
-import transactionService from '../services/transactionService'
+import { createTransaction } from '../reducers/clientSlice'
 
 const TRANSACTION_STORAGE_KEY = 'pending_transaction_data'
 const TRANSACTION_SUBMITTED_KEY = 'transaction_submitted'
@@ -21,6 +22,7 @@ const TRANSACTION_SUBMITTED_KEY = 'transaction_submitted'
 const TransactionReview = () => {
 	const location = useLocation()
 	const navigate = useNavigate()
+	const dispatch = useDispatch()
 	const currentPath = location.pathname
 	const [isSubmitted, setIsSubmitted] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
@@ -115,7 +117,7 @@ const TransactionReview = () => {
 				})),
 			}
 
-			await transactionService.createTransaction(newTransaction)
+			dispatch(createTransaction(newTransaction)).unwrap()
 			setIsSubmitted(true)
 		} catch (err) {
 			setError(
