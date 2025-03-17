@@ -26,6 +26,13 @@ export const ClientTransactions = () => {
 				<>
 					<p>Name: {selectedClient.fullName}</p>
 					<p>Address: {selectedClient.address}</p>
+					<p>
+						Grand Total: ₱
+						{Number(selectedClient.totalBalance).toLocaleString(
+							'en-PH',
+							{ minimumFractionDigits: 2 },
+						)}
+					</p>
 				</>
 			) : (
 				clientDetailsError && <div>No client details available.</div>
