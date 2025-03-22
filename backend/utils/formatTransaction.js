@@ -8,9 +8,19 @@ const formatTransaction = (transaction) => {
 	const payments = []
 	const regularUnitPrices = []
 
+	const structuredParticulars = []
+
 	particulars.forEach((particular) => {
 		const { units, unitPrice } = particular.transactionParticular
 		const isPayment = particular.type === 'Payment'
+
+		structuredParticulars.push({
+			particularId: particular.id,
+			type: particular.type,
+			name: particular.name,
+			units: units,
+			unitPrice: unitPrice,
+		})
 
 		if (isPayment) {
 			totalPayments += parseFloat(unitPrice)
@@ -32,7 +42,8 @@ const formatTransaction = (transaction) => {
 		id,
 		joNumber,
 		date,
-		particulars: formattedParticulars,
+		particulars: structuredParticulars, 
+		formattedParticulars: formattedParticulars, 
 		unitPrices,
 		amount: totalAmount,
 		payment: totalPayments,
