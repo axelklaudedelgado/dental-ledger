@@ -165,18 +165,26 @@ const clientSlice = createSlice({
 						(transaction) => transaction.id !== action.payload,
 					)
 
-				if (state.selectedClient && state.selectedClient.id) {
-					state.clients = state.clients.map((client) =>
-						client.id === state.selectedClient.id
-							? {
-									...client,
-									totalBalance:
-										state.selectedClient.totalBalance,
-									status: state.selectedClient.status,
-								}
-							: client,
+				state.selectedClient.totalBalance =
+					state.selectedClient.transactions.reduce(
+						(acc, transaction) =>
+							acc +
+							transaction.amount -
+							(transaction.payment || 0),
+						0,
 					)
-				}
+
+				state.selectedClient = { ...state.selectedClient }
+
+				state.clients = state.clients.map((client) =>
+					client.id === state.selectedClient.id
+						? {
+								...client,
+								totalBalance: state.selectedClient.totalBalance,
+								status: state.selectedClient.status,
+							}
+						: client,
+				)
 			})
 	},
 })

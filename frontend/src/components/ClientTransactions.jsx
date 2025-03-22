@@ -28,10 +28,9 @@ export const ClientTransactions = () => {
 					<p>Address: {selectedClient.address}</p>
 					<p>
 						Grand Total: ₱
-						{Number(selectedClient.totalBalance).toLocaleString(
-							'en-PH',
-							{ minimumFractionDigits: 2 },
-						)}
+						{Number(
+							selectedClient.totalBalance || 0,
+						).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
 					</p>
 				</>
 			) : (
