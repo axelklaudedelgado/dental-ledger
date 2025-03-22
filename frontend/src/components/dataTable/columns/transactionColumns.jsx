@@ -31,7 +31,7 @@ export const transactionColumns = [
 		),
 		cell: ({ row }) => (
 			<div className="space-y-1">
-				{row.original.particulars.map((particular, index) => (
+				{row.original.formattedParticulars.map((particular, index) => (
 					<div key={index} className="min-h-6">
 						{particular}
 					</div>
@@ -46,7 +46,7 @@ export const transactionColumns = [
 			<DataTableColumnHeader column={column} title="Unit Price" />
 		),
 		cell: ({ row }) => {
-			const particulars = row.original.particulars
+			const particulars = row.original.formattedParticulars
 			const unitPrices = row.original.unitPrices || []
 
 			return (
@@ -79,7 +79,7 @@ export const transactionColumns = [
 			<DataTableColumnHeader column={column} title="Payment" />
 		),
 		cell: ({ row }) => {
-			const particulars = row.original.particulars
+			const particulars = row.original.formattedParticulars
 			const paymentIndex = particulars.findIndex(
 				(p) => p.toLowerCase() === 'payment',
 			)
