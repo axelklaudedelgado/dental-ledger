@@ -56,6 +56,17 @@ export const createTransaction = createAsyncThunk(
 	},
 )
 
+export const updateTransaction = createAsyncThunk(
+	'transactions/update',
+	async ({ id, updatedData }) => {
+		const response = await transactionService.updateTransaction(
+			id,
+			updatedData,
+		)
+		return response
+	},
+)
+
 export const deleteTransaction = createAsyncThunk(
 	'transactions/delete',
 	async (transactionId) => {
@@ -146,11 +157,43 @@ const clientSlice = createSlice({
 								: client,
 						)
 
-					state.selectedClient = {
-						...state.selectedClient,
-						totalBalance,
-						status,
-					};
+						state.selectedClient = {
+							...state.selectedClient,
+							totalBalance,
+							status,
+						}
+
+						state.lastUpdated = Date.now()
+					}
+				}
+			})
+
+			// Update a single transaction
+			.addCase(updateTransaction.fulfilled, (state, action) => {
+				if (state.selectedClient?.transactions) {
+					state.selectedClient.transactions = state.selectedClient.transactions.map(
+						(transaction) =>
+							transaction.id === action.payload.transaction.id
+								? action.payload.transaction
+								: transaction
+					)
+				}
+
+				if (action.payload.client) {
+					const { totalBalance, status } = action.payload.client
+
+					if (state.selectedClient?.id) {
+						state.clients = state.clients.map((client) =>
+							client.id === state.selectedClient.id
+								? { ...client, totalBalance, status }
+								: client
+						)
+
+						state.selectedClient = {
+							...state.selectedClient,
+							totalBalance,
+							status,
+						}
 
 						state.lastUpdated = Date.now()
 					}

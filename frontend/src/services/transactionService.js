@@ -7,6 +7,11 @@ const createTransaction = async (newTransaction) => {
 	return response.data
 }
 
+const updateTransaction = async (id, updatedData) => {
+	const response = await axios.put(`${baseUrl}/${id}`, updatedData)
+	return response.data
+}
+
 const nextJONumber = async () => {
 	const response = await axios.get(`${baseUrl}/next-jo-number`)
 	return response.data
@@ -17,4 +22,4 @@ const deleteOne = async (id) => {
 	return response.data
 }
 
-export default { createTransaction, nextJONumber, deleteOne }
+export default { createTransaction, updateTransaction, nextJONumber, deleteOne }
