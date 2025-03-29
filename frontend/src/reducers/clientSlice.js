@@ -136,14 +136,15 @@ const clientSlice = createSlice({
 					action.payload.transaction,
 				)
 
-				const { totalBalance, status } = action.payload.client;
+				if (action.payload.client) {
+					const { totalBalance, status } = action.payload.client
 
-				if (state.selectedClient?.id) {
-					state.clients = state.clients.map((client) =>
-						client.id === state.selectedClient.id
-							? { ...client, totalBalance, status }
-							: client
-					);
+					if (state.selectedClient?.id) {
+						state.clients = state.clients.map((client) =>
+							client.id === state.selectedClient.id
+								? { ...client, totalBalance, status }
+								: client,
+						)
 
 					state.selectedClient = {
 						...state.selectedClient,
@@ -151,7 +152,8 @@ const clientSlice = createSlice({
 						status,
 					};
 
-					state.lastUpdated = Date.now();
+						state.lastUpdated = Date.now()
+					}
 				}
 			})
 
