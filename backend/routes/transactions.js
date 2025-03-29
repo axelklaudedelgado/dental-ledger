@@ -356,4 +356,166 @@ router.delete('/:id', async (req, res) => {
 	}
 })
 
+router.put('/:id', async (req, res) => {
+	const { id } = req.params
+	const { clientId, particulars, date, remarks } = req.body
+
+	if (!clientId || !Array.isArray(particulars) || particulars.length === 0) {
+		return res
+			.status(400)
+			.json({ error: 'Client ID and particulars are required.' })
+	}
+
+	const t = await sequelize.transaction()
+
+	try {
+		const transaction = await Transaction.findByPk(id, {
+			include: {
+				model: Particular,
+				through: { attributes: ['units', 'unitPrice'] },
+			},
+			transaction: t,
+		})
+
+		if (!transaction) {
+			throw new Error('Transaction not found.')
+		}
+
+		const client = await Client.findByPk(clientId, {
+			transaction: t,
+			lock: t.LOCK.UPDATE,
+		})
+
+		if (!client) {
+			throw new Error('Client not found.')
+		}
+
+		await transaction.update(
+			{
+				date: date || new Date(),
+				remarks: remarks || null,
+			},
+			{ transaction: t },
+		)
+
+		await transactionParticular.destroy({
+			where: { transactionId: id },
+			transaction: t,
+		})
+
+		await Promise.all(
+			particulars.map(async (particular) => {
+				const { particularId, units = 0, unitPrice } = particular
+
+				const existingParticular = await Particular.findByPk(
+					particularId,
+					{
+						transaction: t,
+					},
+				)
+				if (!existingParticular) {
+					throw new Error(
+						`Particular with ID ${particularId} not found.`,
+					)
+				}
+
+				return transactionParticular.create(
+					{
+						transactionId: id,
+						particularId,
+						units,
+						unitPrice,
+					},
+					{ transaction: t },
+				)
+			}),
+		)
+
+		const allTransactions = await Transaction.findAll({
+			where: { clientId },
+			include: {
+				model: Particular,
+				through: { attributes: ['units', 'unitPrice'] },
+			},
+			transaction: t,
+		})
+
+		let grossBalance = 0
+		let totalPayments = 0
+		let lastTransactionDate = null
+
+		allTransactions.forEach((txn) => {
+			let transactionAmount = 0
+			let transactionPayments = 0
+
+			txn.particulars.forEach((particular) => {
+				const { units, unitPrice } = particular.transactionParticular
+				if (particular.type === 'Payment') {
+					transactionPayments += parseFloat(unitPrice) || 0
+				} else {
+					transactionAmount += units * unitPrice
+				}
+			})
+
+			grossBalance += transactionAmount
+			totalPayments += transactionPayments
+
+			if (
+				!lastTransactionDate ||
+				new Date(txn.date) > new Date(lastTransactionDate)
+			) {
+				lastTransactionDate = txn.date
+			}
+		})
+
+		const totalBalance = Math.max(grossBalance - totalPayments, 0)
+
+		const status =
+			totalBalance === 0
+				? allTransactions.length > 0
+					? 'Paid'
+					: 'New'
+				: 'Unpaid'
+
+		await client.update(
+			{
+				totalBalance,
+				lastTransactionDate:
+					lastTransactionDate || 'No Transactions Yet',
+				status,
+			},
+			{ transaction: t },
+		)
+
+		const updatedTransaction = await Transaction.findByPk(id, {
+			include: [
+				{
+					model: Particular,
+					through: {
+						attributes: ['units', 'unitPrice'],
+					},
+				},
+			],
+			transaction: t,
+		})
+
+		const formattedTransaction = formatTransaction(updatedTransaction)
+
+		await t.commit()
+
+		res.status(200).json({
+			message: 'Transaction updated successfully.',
+			transaction: formattedTransaction,
+			client: {
+				fullName: client.fullName,
+				totalBalance,
+				status,
+			},
+		})
+	} catch (error) {
+		await t.rollback()
+		res.status(500).json({ error: error.message })
+	}
+})
+
 module.exports = router
