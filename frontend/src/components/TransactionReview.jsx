@@ -14,12 +14,16 @@ import { Spinner } from './ui/extensions/spinner'
 import { format } from 'date-fns'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
-import { createTransaction, refreshClientList } from '../reducers/clientSlice'
+import {
+	createTransaction,
+	updateTransaction,
+	refreshClientList,
+} from '../reducers/clientSlice'
 
 const TRANSACTION_STORAGE_KEY = 'pending_transaction_data'
 const TRANSACTION_SUBMITTED_KEY = 'transaction_submitted'
 
-const TransactionReview = () => {
+const TransactionReview = ({ isUpdateMode = false }) => {
 	const location = useLocation()
 	const navigate = useNavigate()
 	const dispatch = useDispatch()
@@ -29,31 +33,30 @@ const TransactionReview = () => {
 	const [error, setError] = useState(null)
 	const [transaction, setTransaction] = useState(null)
 	const clientTransactionsPath = currentPath.replace(
-		'/transaction/review',
+		isUpdateMode ? '/transaction/edit/review' : '/transaction/review',
 		'',
 	)
 
 	useEffect(() => {
 		const wasSubmitted =
 			sessionStorage.getItem(TRANSACTION_SUBMITTED_KEY) === 'true'
+
 		if (wasSubmitted) {
 			setIsSubmitted(true)
 		}
-	}, [])
 
-	useEffect(() => {
-		const handlePopState = (event) => {
-			if (isSubmitted) {
+		const handlePopState = () => {
+			const wasSubmitted =
+				sessionStorage.getItem(TRANSACTION_SUBMITTED_KEY) === 'true'
+			if (wasSubmitted) {
+				clearTransactionStorage()
 				navigate(clientTransactionsPath, { replace: true })
 			}
 		}
 
 		window.addEventListener('popstate', handlePopState)
-
-		return () => {
-			window.removeEventListener('popstate', handlePopState)
-		}
-	}, [isSubmitted, navigate, clientTransactionsPath])
+		return () => window.removeEventListener('popstate', handlePopState)
+	}, [navigate, clientTransactionsPath])
 
 	useEffect(() => {
 		if (location.state) {
@@ -67,46 +70,51 @@ const TransactionReview = () => {
 				TRANSACTION_STORAGE_KEY,
 			)
 			if (savedTransaction) {
-				setTransaction(JSON.parse(savedTransaction))
+				try {
+					setTransaction(JSON.parse(savedTransaction))
+				} catch (e) {
+					console.error('Failed to parse transaction data', e)
+					setError(
+						'Failed to load transaction data. Please try again.',
+					)
+				}
 			}
 		}
 	}, [location.state])
 
-	useEffect(() => {
-		if (isSubmitted) {
-			sessionStorage.setItem(TRANSACTION_SUBMITTED_KEY, 'true')
-			sessionStorage.removeItem(TRANSACTION_STORAGE_KEY)
-
-			navigate(currentPath, { replace: true })
-		}
-	}, [isSubmitted, navigate, currentPath])
-
-	if (!transaction) {
-		return (
-			<div>
-				No transaction data available. Please fill out the form first.
-			</div>
-		)
-	}
-
 	const handleEdit = () => {
-		const newPath = currentPath.replace('/review', '/add')
-		navigate(newPath, { state: transaction })
+		if (isUpdateMode) {
+			const editPath = currentPath.replace('/review', '')
+			console.log(transaction)
+			navigate(editPath, { state: transaction })
+		} else {
+			const newPath = currentPath.replace('/review', '/add')
+			navigate(newPath, { state: transaction })
+		}
 	}
 
-	const isOverpayment = transaction.totalPayment > transaction.totalAmount
-	const overpayment = isOverpayment
-		? transaction.totalPayment - transaction.totalAmount
+	const isOverpayment = transaction?.payment > transaction?.amount
+	const overpayment =
+		isOverpayment && transaction
+			? transaction.payment - transaction.amount
+			: 0
+	const remainingClientBalance = transaction
+		? transaction.clientTotalBalance - overpayment
 		: 0
-	const remainingClientBalance = transaction.clientTotalBalance - overpayment
+
+	const clearTransactionStorage = () => {
+		sessionStorage.removeItem(TRANSACTION_SUBMITTED_KEY)
+		sessionStorage.removeItem(TRANSACTION_STORAGE_KEY)
+	}
 
 	const onSubmit = async () => {
 		try {
 			setIsLoading(true)
 			setError(null)
 			const { clientId, date, remarks, particulars } = transaction
+			const transactionId = transaction.id
 
-			const newTransaction = {
+			const transactionData = {
 				clientId: clientId,
 				date: date,
 				remarks: remarks === '' ? null : remarks,
@@ -117,13 +125,24 @@ const TransactionReview = () => {
 				})),
 			}
 
-			dispatch(createTransaction(newTransaction)).unwrap()
+			if (isUpdateMode) {
+				await dispatch(
+					updateTransaction({
+						id: transactionId,
+						updatedData: transactionData,
+					}),
+				).unwrap()
+			} else {
+				await dispatch(createTransaction(transactionData)).unwrap()
+			}
+
 			dispatch(refreshClientList())
 			setIsSubmitted(true)
+			sessionStorage.setItem(TRANSACTION_SUBMITTED_KEY, 'true')
 		} catch (err) {
 			setError(
 				err.message ||
-					'An error occurred while creating the transaction.',
+					`An error occurred while ${isUpdateMode ? 'updating' : 'creating'} the transaction.`,
 			)
 		} finally {
 			setIsLoading(false)
@@ -131,9 +150,37 @@ const TransactionReview = () => {
 	}
 
 	const handleBackToClientTransactions = () => {
-		sessionStorage.removeItem(TRANSACTION_SUBMITTED_KEY)
+		clearTransactionStorage()
 		dispatch(refreshClientList())
-		navigate(clientTransactionsPath)
+		navigate(clientTransactionsPath, { replace: true })
+	}
+
+	if (!transaction) {
+		return (
+			<div className="flex flex-col items-center justify-center h-[60vh]">
+				<Alert className="mb-6 bg-yellow-50 border-yellow-200 max-w-md">
+					<div className="flex items-start gap-4">
+						<AlertCircle className="h-6 w-6 text-yellow-500 mt-1" />
+						<div>
+							<AlertTitle className="text-lg font-semibold text-yellow-800">
+								No Transaction Data
+							</AlertTitle>
+							<AlertDescription className="text-yellow-700">
+								No transaction data available. Please fill out
+								the form first.
+							</AlertDescription>
+						</div>
+					</div>
+				</Alert>
+				<Button
+					onClick={() => navigate(clientTransactionsPath)}
+					variant="outline"
+					className="mt-4"
+				>
+					Back to Client's Transactions
+				</Button>
+			</div>
+		)
 	}
 
 	const renderContent = () => (
@@ -158,12 +205,11 @@ const TransactionReview = () => {
 				</ul>
 			</div>
 			<div>
-				<strong>Total Amount:</strong> ₱
-				{transaction.totalAmount.toFixed(2)}
+				<strong>Total Amount:</strong> ₱{transaction.amount.toFixed(2)}
 			</div>
 			<div>
 				<strong>Total Payment:</strong> ₱
-				{transaction.totalPayment.toFixed(2)}
+				{transaction.payment.toFixed(2)}
 			</div>
 			<div>
 				<strong>Balance:</strong> ₱{transaction.balance.toFixed(2)}
@@ -216,7 +262,11 @@ const TransactionReview = () => {
 		<Card className="w-full max-w-2xl mx-auto">
 			<CardHeader>
 				<CardTitle>
-					{isSubmitted ? 'Transaction Summary' : 'Transaction Review'}
+					{isSubmitted
+						? 'Transaction Summary'
+						: isUpdateMode
+							? 'Update Transaction Review'
+							: 'Transaction Review'}
 				</CardTitle>
 			</CardHeader>
 			<CardContent>
@@ -224,7 +274,8 @@ const TransactionReview = () => {
 					{isLoading ? (
 						<div className="h-full flex items-center justify-center">
 							<Spinner size="large">
-								Creating Transaction...
+								{isUpdateMode ? 'Updating' : 'Creating'}{' '}
+								Transaction...
 							</Spinner>
 						</div>
 					) : (
@@ -254,8 +305,11 @@ const TransactionReview = () => {
 											</AlertTitle>
 											<AlertDescription className="text-emerald-700">
 												Transaction has been
-												successfully created and
-												recorded.
+												successfully{' '}
+												{isUpdateMode
+													? 'updated'
+													: 'created and recorded'}
+												.
 											</AlertDescription>
 										</div>
 									</div>
@@ -290,10 +344,14 @@ const TransactionReview = () => {
 						</Button>
 						<Button onClick={onSubmit} disabled={isLoading}>
 							{isLoading
-								? 'Creating...'
+								? isUpdateMode
+									? 'Updating...'
+									: 'Creating...'
 								: error
 									? 'Retry Submission'
-									: 'Confirm and Submit'}
+									: isUpdateMode
+										? 'Confirm and Update'
+										: 'Confirm and Submit'}
 						</Button>
 					</>
 				)}
