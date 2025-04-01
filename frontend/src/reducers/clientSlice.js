@@ -171,12 +171,12 @@ const clientSlice = createSlice({
 			// Update a single transaction
 			.addCase(updateTransaction.fulfilled, (state, action) => {
 				if (state.selectedClient?.transactions) {
-					state.selectedClient.transactions = state.selectedClient.transactions.map(
-						(transaction) =>
+					state.selectedClient.transactions =
+						state.selectedClient.transactions.map((transaction) =>
 							transaction.id === action.payload.transaction.id
 								? action.payload.transaction
-								: transaction
-					)
+								: transaction,
+						)
 				}
 
 				if (action.payload.client) {
@@ -186,7 +186,7 @@ const clientSlice = createSlice({
 						state.clients = state.clients.map((client) =>
 							client.id === state.selectedClient.id
 								? { ...client, totalBalance, status }
-								: client
+								: client,
 						)
 
 						state.selectedClient = {
