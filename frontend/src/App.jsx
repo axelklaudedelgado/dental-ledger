@@ -43,6 +43,14 @@ function App() {
 						path="/client/:slugName/transaction/review"
 						element={<TransactionReview />}
 					/>
+					<Route
+						path="/client/:slugName/transaction/edit"
+						element={<TransactionForm isUpdateMode={true} />}
+					/>
+					<Route
+						path="/client/:slugName/transaction/edit/review"
+						element={<TransactionReview isUpdateMode={true} />}
+					/>
 				</Route>
 			</Routes>
 		</Router>
