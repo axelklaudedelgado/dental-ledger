@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import {
@@ -7,6 +7,7 @@ import {
 	CalendarIcon,
 	PlusCircle,
 	X,
+	Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -168,15 +169,26 @@ const createSchema = (selectedClient) => {
 }
 
 const TRANSACTION_STORAGE_KEY = 'pending_transaction_data'
+const TRANSACTION_SUBMITTED_KEY = 'transaction_submitted'
 
-const TransactionForm = ({ initialData = null }) => {
+const TransactionForm = ({ isUpdateMode = false }) => {
 	const [openComboboxes, setOpenComboboxes] = useState({})
 	const [services, setServices] = useState([])
 	const [nextJONumber, setNextJONumber] = useState(null)
+	const [editingField, setEditingField] = useState(null)
+
+	const dateRef = useRef(null)
+	const remarksRef = useRef(null)
+	const serviceRefs = useRef([])
 
 	const { slugName } = useParams()
 	const location = useLocation()
-	const prevLocation = location.pathname.replace('/transaction/add', '')
+	const prevLocation = isUpdateMode
+		? location.pathname.replace('/transaction/edit', '')
+		: location.pathname.replace('/transaction/add', '')
+	const transactionId = isUpdateMode ? location.state.id : null
+	const originalTransaction = isUpdateMode ? location.state : null
+	console.log(originalTransaction)
 	const navigate = useNavigate()
 	const id = decodeClientSlug(slugName)
 	const dispatch = useDispatch()
@@ -184,6 +196,12 @@ const TransactionForm = ({ initialData = null }) => {
 	const { selectedClient } = useSelector((state) => state.clients)
 
 	const getInitialData = () => {
+		const wasSubmitted =
+			sessionStorage.getItem(TRANSACTION_SUBMITTED_KEY) === 'true'
+		if (wasSubmitted) {
+			return null
+		}
+
 		if (location.state) {
 			return location.state
 		}
@@ -200,14 +218,14 @@ const TransactionForm = ({ initialData = null }) => {
 		return null
 	}
 
-	initialData = getInitialData()
+	const formInitialData = getInitialData()
 
 	useEffect(() => {
 		dispatch(fetchClientDetails(id))
 	}, [id, dispatch])
 
 	useEffect(() => {
-		const fetchData = async () => {
+		const fetchServices = async () => {
 			try {
 				const servicesData = await particularService.getAll()
 				const formattedServices = servicesData.map((service) => ({
@@ -216,25 +234,58 @@ const TransactionForm = ({ initialData = null }) => {
 					type: service.type,
 				}))
 				setServices(formattedServices)
-
-				if (!initialData && nextJONumber === null) {
-					const data = await transactionService.nextJONumber()
-					setNextJONumber(data.nextJONumber)
-				}
 			} catch (error) {
-				console.error('Error fetching data:', error)
+				console.error('Error fetching services:', error)
 			}
 		}
 
-		fetchData()
-	}, [initialData])
+		fetchServices()
+	}, [])
+
+	useEffect(() => {
+		const fetchJONumber = async () => {
+			if (!formInitialData && nextJONumber === null) {
+				try {
+					const data = await transactionService.nextJONumber()
+					setNextJONumber(data.nextJONumber)
+				} catch (error) {
+					console.error('Error fetching JO number:', error)
+				}
+			}
+		}
+
+		fetchJONumber()
+	}, [formInitialData, nextJONumber])
+
+	useEffect(() => {
+		if (editingField) {
+			const refMap = {
+				date: dateRef,
+				remarks: remarksRef,
+			}
+
+			if (editingField.startsWith('particular-')) {
+				const index = Number.parseInt(editingField.split('-')[1])
+				if (serviceRefs.current[index]) {
+					serviceRefs.current[index].focus()
+				}
+			} else {
+				const ref = refMap[editingField]
+				if (ref && ref.current) {
+					ref.current.focus()
+				}
+			}
+		}
+	}, [editingField])
 
 	const form = useForm({
 		resolver: yupResolver(createSchema(selectedClient)),
 		defaultValues: {
-			joNumber: initialData?.joNumber || nextJONumber || '',
-			date: initialData?.date ? new Date(initialData.date) : new Date(),
-			particulars: initialData?.particulars || [
+			joNumber: formInitialData?.joNumber || nextJONumber || '',
+			date: formInitialData?.date
+				? new Date(formInitialData.date)
+				: new Date(),
+			particulars: formInitialData?.particulars || [
 				{
 					particularId: null,
 					type: '',
@@ -243,16 +294,19 @@ const TransactionForm = ({ initialData = null }) => {
 					unitPrice: 0,
 				},
 			],
-			remarks: initialData?.remarks || '',
+			remarks:
+				formInitialData?.remarks === 'No remarks'
+					? ''
+					: formInitialData?.remarks || '',
 		},
 		mode: 'onChange',
 	})
 
 	useEffect(() => {
-		if (nextJONumber && !initialData) {
+		if (nextJONumber && !formInitialData) {
 			form.setValue('joNumber', nextJONumber)
 		}
-	}, [nextJONumber, initialData, form])
+	}, [nextJONumber, formInitialData, form])
 
 	const { watch } = form
 	const particulars = watch('particulars')
@@ -346,6 +400,8 @@ const TransactionForm = ({ initialData = null }) => {
 				unitPrice: 0,
 			},
 		])
+
+		serviceRefs.current = serviceRefs.current.concat(null)
 	}
 
 	const removeParticular = async (index) => {
@@ -367,11 +423,14 @@ const TransactionForm = ({ initialData = null }) => {
 			form.clearErrors(field)
 		})
 
+		serviceRefs.current = serviceRefs.current.filter((_, i) => i !== index)
+
 		await triggerAllPaymentValidations()
 	}
 
 	const onSubmit = (data) => {
 		const transaction = {
+			id: transactionId,
 			joNumber: data.joNumber,
 			date: format(data.date, 'yyyy-MM-dd'),
 			clientId: id,
@@ -383,17 +442,22 @@ const TransactionForm = ({ initialData = null }) => {
 				unitPrice: Number(p.unitPrice),
 			})),
 			remarks: data.remarks,
-			totalAmount,
-			totalPayment,
+			amount: totalAmount,
+			payment: totalPayment,
 			balance,
 			clientTotalBalance: selectedClient?.totalBalance || 0,
 			projectedClientBalance:
 				(selectedClient?.totalBalance || 0) + balance,
 		}
 
-		const currentPath = location.pathname
-		const newPath = currentPath.replace('/add', '/review')
-		navigate(newPath, { state: transaction })
+		if (isUpdateMode) {
+			const currentPath = location.pathname
+			navigate(`${currentPath}/review`, { state: transaction })
+		} else {
+			const currentPath = location.pathname
+			const newPath = currentPath.replace('/add', '/review')
+			navigate(newPath, { state: transaction })
+		}
 	}
 
 	return (
@@ -430,46 +494,77 @@ const TransactionForm = ({ initialData = null }) => {
 								<FormItem className="flex flex-col">
 									<FormLabel>Date</FormLabel>
 									<FormControl>
-										<Popover>
-											<PopoverTrigger asChild>
-												<Button
-													variant="outline"
-													className="w-[240px] justify-start text-left font-normal"
-												>
-													<CalendarIcon className="mr-2 h-4 w-4" />
-													{format(field.value, 'PPP')}
-												</Button>
-											</PopoverTrigger>
-											<PopoverContent
-												className="w-auto p-0"
-												align="start"
-											>
-												<Calendar
-													mode="single"
-													selected={field.value}
-													onSelect={(date) => {
-														if (date) {
-															field.onChange(date)
+										<div className="relative">
+											<Popover>
+												<PopoverTrigger asChild>
+													<Button
+														variant="outline"
+														className="w-[240px] justify-start text-left font-normal"
+														disabled={
+															isUpdateMode &&
+															editingField !==
+																'date'
 														}
-													}}
-													disabled={(date) =>
-														date >
-														new Date(
-															new Date().toDateString(),
+														ref={dateRef}
+													>
+														<CalendarIcon className="mr-2 h-4 w-4" />
+														{format(
+															field.value,
+															'PPP',
+														)}
+													</Button>
+												</PopoverTrigger>
+												<PopoverContent
+													className="w-auto p-0"
+													align="start"
+												>
+													<Calendar
+														mode="single"
+														selected={field.value}
+														onSelect={(date) => {
+															if (date) {
+																field.onChange(
+																	date,
+																)
+															}
+														}}
+														disabled={(date) =>
+															date >
+															new Date(
+																new Date().toDateString(),
+															)
+														}
+														initialFocus
+														classNames={{
+															day_selected:
+																'bg-zinc-900 text-white hover:bg-zinc-900 hover:text-white focus:bg-zinc-900 focus:text-white',
+															day_disabled:
+																'text-muted-foreground opacity-50 hover:bg-transparent hover:text-muted-foreground',
+															day_today:
+																'bg-accent text-accent-foreground',
+														}}
+													/>
+												</PopoverContent>
+											</Popover>
+											{isUpdateMode && (
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon"
+													className="absolute right-2 top-1/2 -translate-y-1/2"
+													onClick={() =>
+														setEditingField(
+															editingField ===
+																'date'
+																? null
+																: 'date',
 														)
 													}
-													initialFocus
-													classNames={{
-														day_selected:
-															'bg-zinc-900 text-white hover:bg-zinc-900 hover:text-white focus:bg-zinc-900 focus:text-white',
-														day_disabled:
-															'text-muted-foreground opacity-50 hover:bg-transparent hover:text-muted-foreground',
-														day_today:
-															'bg-accent text-accent-foreground',
-													}}
-												/>
-											</PopoverContent>
-										</Popover>
+												>
+													<Pencil className="h-4 w-4" />
+												</Button>
+											)}
+										</div>
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -482,7 +577,13 @@ const TransactionForm = ({ initialData = null }) => {
 						{particulars.map((particular, index) => (
 							<div
 								key={index}
-								className="flex items-start gap-4 [&_:first-child]:flex-shrink"
+								className={cn(
+									'flex items-start gap-4 [&_:first-child]:flex-shrink p-2 rounded-md',
+									isUpdateMode &&
+										editingField ===
+											`particular-${index}` &&
+										'bg-muted/30',
+								)}
 							>
 								<FormField
 									control={form.control}
@@ -492,111 +593,124 @@ const TransactionForm = ({ initialData = null }) => {
 											<FormLabel>
 												Service/Payment
 											</FormLabel>
-											<Popover
-												open={openComboboxes[index]}
-												onOpenChange={(open) =>
-													setOpenComboboxes(
-														(prev) => ({
-															...prev,
-															[index]: open,
-														}),
-													)
-												}
-											>
-												<PopoverTrigger asChild>
-													<FormControl>
-														<Button
-															variant="outline"
-															role="combobox"
-															aria-expanded={
-																openComboboxes[
-																	index
-																]
-															}
-															className="w-full justify-between whitespace-normal"
-														>
-															<span className="mr-2">
-																{field.value
-																	? services.find(
-																			(
-																				service,
-																			) =>
-																				service.value ===
-																				field.value,
-																		)?.label
-																	: 'Select service...'}
-															</span>
-															<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-														</Button>
-													</FormControl>
-												</PopoverTrigger>
-												<PopoverContent
-													className="w-[var(--radix-popover-trigger-width)] p-0"
-													align="start"
+											<div className="relative">
+												<Popover
+													open={openComboboxes[index]}
+													onOpenChange={(open) =>
+														setOpenComboboxes(
+															(prev) => ({
+																...prev,
+																[index]: open,
+															}),
+														)
+													}
 												>
-													<Command>
-														<CommandInput placeholder="Search service..." />
-														<CommandList>
-															<CommandEmpty>
-																No service
-																found.
-															</CommandEmpty>
-															<CommandGroup>
-																{services.map(
-																	(
-																		service,
-																	) => (
-																		<CommandItem
-																			key={
-																				service.value
-																			}
-																			value={
-																				service.label
-																			}
-																			onSelect={() => {
-																				const newValue =
-																					field.value ===
+													<PopoverTrigger asChild>
+														<FormControl>
+															<Button
+																variant="outline"
+																role="combobox"
+																aria-expanded={
+																	openComboboxes[
+																		index
+																	]
+																}
+																className="w-full justify-between whitespace-normal"
+																disabled={
+																	isUpdateMode &&
+																	editingField !==
+																		`particular-${index}`
+																}
+																ref={(el) => {
+																	serviceRefs.current[
+																		index
+																	] = el
+																}}
+															>
+																<span className="mr-2">
+																	{field.value
+																		? services.find(
+																				(
+																					service,
+																				) =>
+																					service.value ===
+																					field.value,
+																			)
+																				?.label
+																		: 'Select service...'}
+																</span>
+																<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+															</Button>
+														</FormControl>
+													</PopoverTrigger>
+													<PopoverContent
+														className="w-[var(--radix-popover-trigger-width)] p-0"
+														align="start"
+													>
+														<Command>
+															<CommandInput placeholder="Search service..." />
+															<CommandList>
+																<CommandEmpty>
+																	No service
+																	found.
+																</CommandEmpty>
+																<CommandGroup>
+																	{services.map(
+																		(
+																			service,
+																		) => (
+																			<CommandItem
+																				key={
 																					service.value
-																						? null
-																						: service.value
-																				field.onChange(
-																					newValue,
-																				)
-																				handleParticularChange(
-																					index,
-																					'particularId',
-																					newValue,
-																				)
-																				setOpenComboboxes(
-																					(
-																						prev,
-																					) => ({
-																						...prev,
-																						[index]: false,
-																					}),
-																				)
-																			}}
-																		>
-																			<Check
-																				className={cn(
-																					'mr-2 h-4 w-4',
-																					field.value ===
+																				}
+																				value={
+																					service.label
+																				}
+																				onSelect={() => {
+																					const newValue =
+																						field.value ===
 																						service.value
-																						? 'opacity-100'
-																						: 'opacity-0',
-																				)}
-																			/>
-																			{
-																				service.label
-																			}
-																		</CommandItem>
-																	),
-																)}
-															</CommandGroup>
-														</CommandList>
-													</Command>
-												</PopoverContent>
-											</Popover>
+																							? null
+																							: service.value
+																					field.onChange(
+																						newValue,
+																					)
+																					handleParticularChange(
+																						index,
+																						'particularId',
+																						newValue,
+																					)
+																					setOpenComboboxes(
+																						(
+																							prev,
+																						) => ({
+																							...prev,
+																							[index]: false,
+																						}),
+																					)
+																				}}
+																			>
+																				<Check
+																					className={cn(
+																						'mr-2 h-4 w-4',
+																						field.value ===
+																							service.value
+																							? 'opacity-100'
+																							: 'opacity-0',
+																					)}
+																				/>
+																				{
+																					service.label
+																				}
+																			</CommandItem>
+																		),
+																	)}
+																</CommandGroup>
+															</CommandList>
+														</Command>
+													</PopoverContent>
+												</Popover>
+											</div>
 											<FormMessage />
 										</FormItem>
 									)}
@@ -626,6 +740,11 @@ const TransactionForm = ({ initialData = null }) => {
 																		.value,
 																)
 															}}
+															disabled={
+																isUpdateMode &&
+																editingField !==
+																	`particular-${index}`
+															}
 															min={1}
 														/>
 													</FormControl>
@@ -703,6 +822,11 @@ const TransactionForm = ({ initialData = null }) => {
 																)
 															}
 														}}
+														disabled={
+															isUpdateMode &&
+															editingField !==
+																`particular-${index}`
+														}
 													/>
 												</FormControl>
 												<FormMessage />
@@ -711,28 +835,60 @@ const TransactionForm = ({ initialData = null }) => {
 									/>
 								)}
 
-								{particulars.length > 1 && (
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										onClick={() => removeParticular(index)}
-										className="flex-none mt-8"
-									>
-										<X className="h-4 w-4" />
-									</Button>
-								)}
+								<div className="flex items-center mt-8 space-x-1">
+									{isUpdateMode && (
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											onClick={() =>
+												setEditingField(
+													editingField ===
+														`particular-${index}`
+														? null
+														: `particular-${index}`,
+												)
+											}
+										>
+											<Pencil className="h-4 w-4" />
+										</Button>
+									)}
+
+									{particulars.length > 1 && (
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											onClick={() =>
+												removeParticular(index)
+											}
+											disabled={
+												isUpdateMode &&
+												editingField !==
+													`particular-${index}`
+											}
+										>
+											<X className="h-4 w-4" />
+										</Button>
+									)}
+								</div>
 							</div>
 						))}
-						<Button
-							type="button"
-							variant="outline"
-							onClick={addParticular}
-							className="mt-2"
-						>
-							<PlusCircle className="mr-2 h-4 w-4" /> Add
-							Particular
-						</Button>
+						{!isUpdateMode && (
+							<Button
+								type="button"
+								variant="outline"
+								onClick={addParticular}
+								className="mt-2"
+								disabled={
+									isUpdateMode &&
+									!editingField?.startsWith('particular-')
+								}
+							>
+								<PlusCircle className="mr-2 h-4 w-4" /> Add
+								Particular
+							</Button>
+						)}
 					</div>
 
 					<div className="space-y-4">
@@ -774,6 +930,8 @@ const TransactionForm = ({ initialData = null }) => {
 							totalPayment={totalPayment}
 							balance={balance}
 							selectedClient={selectedClient}
+							isUpdateMode={isUpdateMode}
+							originalTransaction={originalTransaction}
 						/>
 					</div>
 
@@ -784,11 +942,36 @@ const TransactionForm = ({ initialData = null }) => {
 							<FormItem>
 								<FormLabel>Remarks (Optional)</FormLabel>
 								<FormControl>
-									<Textarea
-										{...field}
-										placeholder="Any additional notes..."
-										className="h-24"
-									/>
+									<div className="relative">
+										<Textarea
+											{...field}
+											placeholder="Any additional notes..."
+											className="h-24"
+											disabled={
+												isUpdateMode &&
+												editingField !== 'remarks'
+											}
+											ref={remarksRef}
+										/>
+										{isUpdateMode && (
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="absolute right-2 top-4"
+												onClick={() =>
+													setEditingField(
+														editingField ===
+															'remarks'
+															? null
+															: 'remarks',
+													)
+												}
+											>
+												<Pencil className="h-4 w-4" />
+											</Button>
+										)}
+									</div>
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -796,7 +979,9 @@ const TransactionForm = ({ initialData = null }) => {
 					/>
 
 					<Button type="submit" className="w-full">
-						Review Transaction
+						{isUpdateMode
+							? 'Update Transaction'
+							: 'Review Transaction'}
 					</Button>
 				</form>
 			</Form>
