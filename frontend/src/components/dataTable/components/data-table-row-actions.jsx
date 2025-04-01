@@ -24,13 +24,11 @@ import { Button } from '@/components/ui/button'
 import { MoreHorizontal } from 'lucide-react'
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { useToast } from '../../ui/hooks/use-toast'
 
 import { deleteClient, deleteTransaction } from '@/reducers/clientSlice'
-
-import transactionService from '@/services/transactionService'
 
 export function TableRowActions({ row, type }) {
 	const navigate = useNavigate()
@@ -39,6 +37,9 @@ export function TableRowActions({ row, type }) {
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 	const [dropdownOpen, setDropdownOpen] = useState(false)
 	const [updateFormOpen, setUpdateFormOpen] = useState(false)
+
+	// Get the current slugName from the URL
+	const { slugName } = useParams()
 
 	const handleDelete = async () => {
 		const id = row.original.id
@@ -77,6 +78,26 @@ export function TableRowActions({ row, type }) {
 		setUpdateFormOpen(false)
 	}
 
+	const handleUpdateTransaction = () => {
+		if (type === 'transaction') {
+			if (slugName) {
+				navigate(`/client/${slugName}/transaction/edit`, {
+					state: row.original,
+				})
+			} else {
+				toast({
+					variant: 'destructive',
+					title: 'Error',
+					description:
+						'Could not determine the client. Please try again.',
+				})
+			}
+		} else {
+			setUpdateFormOpen(true)
+		}
+		setDropdownOpen(false)
+	}
+
 	return (
 		<div onClick={(e) => e.stopPropagation()}>
 			<DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
@@ -95,8 +116,7 @@ export function TableRowActions({ row, type }) {
 					<DropdownMenuItem
 						onSelect={(e) => {
 							e.preventDefault()
-							setUpdateFormOpen(true)
-							setDropdownOpen(false)
+							handleUpdateTransaction()
 						}}
 					>
 						Update
@@ -112,13 +132,15 @@ export function TableRowActions({ row, type }) {
 				</DropdownMenuContent>
 			</DropdownMenu>
 
-			<ClientForm
-				initialData={row.original}
-				onClientUpdated={handleClientUpdated}
-				open={updateFormOpen}
-				isUpdateMode={true}
-				onOpenChange={setUpdateFormOpen}
-			/>
+			{type === 'client' && (
+				<ClientForm
+					initialData={row.original}
+					onClientUpdated={handleClientUpdated}
+					open={updateFormOpen}
+					isUpdateMode={true}
+					onOpenChange={setUpdateFormOpen}
+				/>
+			)}
 
 			<AlertDialog
 				open={deleteDialogOpen}
@@ -138,7 +160,7 @@ export function TableRowActions({ row, type }) {
 							<br />
 							{type === 'client'
 								? 'This action is irreversible. Deleting this client will also remove all associated records.'
-								: 'This action is irreversible. Deleting this transaction may affect the client’s balance.'}
+								: "This action is irreversible. Deleting this transaction may affect the client's balance."}
 							<br />
 							<br />
 							Are you sure you want to proceed?
