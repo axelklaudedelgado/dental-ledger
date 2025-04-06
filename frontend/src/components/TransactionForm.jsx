@@ -188,7 +188,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 		: location.pathname.replace('/transaction/add', '')
 	const transactionId = isUpdateMode ? location.state.id : null
 	const originalTransaction = isUpdateMode ? location.state : null
-	console.log(originalTransaction)
+
 	const navigate = useNavigate()
 	const id = decodeClientSlug(slugName)
 	const dispatch = useDispatch()
@@ -689,6 +689,17 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 																						}),
 																					)
 																				}}
+																				disabled={
+																					service.label ===
+																						'Payment' &&
+																					particulars.some(
+																						(
+																							particular,
+																						) =>
+																							particular.name ===
+																							'Payment',
+																					)
+																				}
 																			>
 																				<Check
 																					className={cn(
