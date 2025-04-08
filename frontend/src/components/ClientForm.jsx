@@ -3,6 +3,7 @@ import * as yup from 'yup'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { Button } from './ui/button'
+import { Plus } from 'lucide-react'
 import { useToast } from './ui/hooks/use-toast'
 import {
 	Dialog,
@@ -221,7 +222,8 @@ export function ClientForm({
 	}
 
 	const defaultTrigger = (
-		<Button variant="outline" size="sm" className="ml-2 hidden h-8 lg:flex">
+		<Button variant="default" size="sm" className="ml-2 hidden h-8 lg:flex">
+			<Plus className="h-4 w-4" />
 			Add Client
 		</Button>
 	)
