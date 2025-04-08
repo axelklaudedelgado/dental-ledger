@@ -3,7 +3,6 @@ import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchClientDetails } from '../reducers/clientSlice'
 import { TransactionTable } from './TransactionTable'
-import BackButton from './BackButton'
 import decodeClientSlug from '../utils/decodeClientSlug'
 
 export const ClientTransactions = () => {
@@ -20,7 +19,6 @@ export const ClientTransactions = () => {
 
 	return (
 		<div>
-			<BackButton navigateRoute={'/'} refreshClients={true} />
 			<h1 className="text-4xl font-bold">Statement of Account</h1>
 			{selectedClient ? (
 				<>

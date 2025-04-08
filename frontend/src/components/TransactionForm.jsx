@@ -36,7 +36,6 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@/components/ui/popover'
-import BackButton from './BackButton'
 import BalanceInfo from './BalanceInfo'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -462,11 +461,6 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 
 	return (
 		<>
-			<BackButton
-				navigateRoute={prevLocation}
-				preserveState={false}
-				clearSessionStorage={true}
-			/>
 			<Form {...form}>
 				<form
 					onSubmit={form.handleSubmit(onSubmit)}
