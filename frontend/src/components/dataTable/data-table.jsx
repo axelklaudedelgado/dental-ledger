@@ -17,6 +17,8 @@ import {
 
 import { Button } from '@/components/ui/button'
 
+import { Plus } from 'lucide-react'
+
 import {
 	Table,
 	TableBody,
@@ -157,13 +159,14 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 					/>
 				) : (
 					<Button
-						variant="outline"
+						variant="default"
 						size="sm"
 						className="ml-2 hidden h-8 lg:flex"
 						onClick={() =>
 							navigate(`${location.pathname}/transaction/add`)
 						}
 					>
+						<Plus className="mr-1 h-4 w-4" />
 						Add Transaction
 					</Button>
 				)}
