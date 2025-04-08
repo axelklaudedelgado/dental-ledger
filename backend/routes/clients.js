@@ -30,6 +30,8 @@ router.get('/:id', async (req, res) => {
 			'lastName',
 			'address',
 			'totalBalance',
+			'lastTransactionDate',
+			'status',
 		],
 		include: [
 			{
@@ -58,6 +60,8 @@ router.get('/:id', async (req, res) => {
 			fullName: client.fullName,
 			address: client.address,
 			totalBalance: Number(client.totalBalance),
+			lastTransactionDate: client.lastTransactionDate,
+			status: client.status,
 		},
 		transactions: formattedTransactions,
 	})
