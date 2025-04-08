@@ -3,6 +3,16 @@ import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchClientDetails } from '../reducers/clientSlice'
 import { TransactionTable } from './TransactionTable'
+import {
+	Card,
+	CardTitle,
+	CardDescription,
+	CardContent,
+	CardHeader,
+	CardFooter,
+} from './ui/card'
+import { Separator } from './ui/separator'
+import { Badge } from './ui/badge'
 import decodeClientSlug from '../utils/decodeClientSlug'
 
 export const ClientTransactions = () => {
@@ -19,21 +29,68 @@ export const ClientTransactions = () => {
 
 	return (
 		<div>
-			<h1 className="text-4xl font-bold">Statement of Account</h1>
-			{selectedClient ? (
-				<>
-					<p>Name: {selectedClient.fullName}</p>
-					<p>Address: {selectedClient.address}</p>
-					<p>
-						Grand Total: ₱
-						{Number(
-							selectedClient.totalBalance || 0,
-						).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-					</p>
-				</>
-			) : (
-				clientDetailsError && <div>No client details available.</div>
-			)}
+			<Card>
+				<CardHeader>
+					<CardTitle>Statement of Account</CardTitle>
+					<CardDescription>
+						Account details and transaction summary
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="space-y-2">
+							<div className="text-sm text-gray-500">Name</div>
+							<div className="font-medium">
+								{selectedClient?.fullName}
+							</div>
+						</div>
+						<div className="space-y-2">
+							<div className="text-sm text-gray-500">Address</div>
+							<div className="font-medium">
+								{selectedClient?.address}
+							</div>
+						</div>
+					</div>
+					<Separator />
+					<div className="flex justify-between items-center">
+						<div className="text-sm text-gray-500">
+							Grand Total / Remaining Balance
+						</div>
+						<div className="text-xl lg:text-2xl font-bold">
+							{new Intl.NumberFormat('en-PH', {
+								style: 'currency',
+								currency: 'PHP',
+							}).format(selectedClient?.totalBalance)}
+						</div>
+					</div>
+				</CardContent>
+				<CardFooter className="flex justify-between">
+					<div className="text-sm text-gray-500">
+						Last Transaction Date:{' '}
+						{selectedClient?.lastTransactionDate
+							? new Date(
+									selectedClient.lastTransactionDate,
+								).toLocaleDateString('en-US', {
+									year: 'numeric',
+									month: 'long',
+									day: 'numeric',
+								})
+							: 'No transactions'}
+					</div>
+					<Badge
+						variant={
+							selectedClient?.status === 'Paid'
+								? 'outline-success'
+								: selectedClient?.status === 'Unpaid'
+									? 'outline-destructive'
+									: 'outline-blue'
+						}
+					>
+						{selectedClient?.status}
+					</Badge>
+				</CardFooter>
+			</Card>
+
 			<TransactionTable
 				data={selectedClient ? selectedClient.transactions : []}
 				status={clientDetailsStatus}
