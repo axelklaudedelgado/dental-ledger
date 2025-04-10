@@ -12,6 +12,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
+	DialogDescription,
 } from './ui/dialog'
 import {
 	Form,
@@ -49,6 +50,7 @@ export function ClientForm({
 	onClientUpdated,
 	initialData = null,
 	isUpdateMode = false,
+	isMobile = false,
 	open: externalOpen,
 	onOpenChange: externalOnOpenChange,
 }) {
@@ -221,23 +223,38 @@ export function ClientForm({
 		setShowAlert(false)
 	}
 
-	const defaultTrigger = (
-		<Button variant="default" size="sm" className="ml-2 hidden h-8 lg:flex">
-			<Plus className="h-4 w-4" />
-			Add Client
-		</Button>
-	)
+	const defaultTrigger = () => {
+		return isMobile ? (
+			<Button size="icon">
+				<Plus className="h-4 w-4" />
+			</Button>
+		) : (
+			<Button
+				variant="default"
+				size="sm"
+				className="ml-2 hidden h-8 lg:flex"
+			>
+				<Plus className="h-4 w-4" />
+				Add Client
+			</Button>
+		)
+	}
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			{!isUpdateMode && (
-				<DialogTrigger asChild>{defaultTrigger}</DialogTrigger>
+				<DialogTrigger asChild>{defaultTrigger()}</DialogTrigger>
 			)}
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
 					<DialogTitle>
 						{initialData ? 'Edit Client' : 'Add Client'}
 					</DialogTitle>
+					<DialogDescription className="pt-2">
+						{initialData
+							? "Edit the client's information below to update them in your list."
+							: "Enter the client's information below to add them to your list."}
+					</DialogDescription>
 				</DialogHeader>
 				<Form {...form}>
 					<form
