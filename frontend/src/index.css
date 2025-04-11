@@ -4,4 +4,6 @@
 
 :root {
 	--radius: 8px;
+	--scn-muted-foreground: 240 3.8% 46.1%;
+	--muted: 210 40% 96.1%;
 }

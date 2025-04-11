@@ -225,8 +225,8 @@ export function ClientForm({
 
 	const defaultTrigger = () => {
 		return isMobile ? (
-			<Button size="icon">
-				<Plus className="h-4 w-4" />
+			<Button size="icon" className="h-11 w-11">
+				<Plus className="h-5 w-5" />
 			</Button>
 		) : (
 			<Button
