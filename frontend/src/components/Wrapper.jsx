@@ -1,4 +1,4 @@
-import { Outlet, useLocation, useParams, Link } from 'react-router-dom'
+import { Outlet, useLocation, useParams } from 'react-router-dom'
 import decodeClientSlug from '../utils/decodeClientSlug'
 import { Toaster } from './ui/toaster'
 import BackButton from './BackButton'
@@ -9,6 +9,7 @@ import {
 	BreadcrumbList,
 	BreadcrumbSeparator,
 } from './ui/breadcrumb'
+import CustomBreadcrumbLink from './ui/extensions/custom-breadcrumb-link'
 import React from 'react'
 
 function Wrapper() {
@@ -37,7 +38,7 @@ function Wrapper() {
 				<BackButton navigateRoute={'/'} refreshClients={true} />
 			),
 			breadcrumbItems: () => [
-				{ label: 'Clients', to: '/' },
+				{ label: 'Clients', to: '/', clearState: true },
 				{ label: decodeClientSlug(params.slugName, true) },
 			],
 		},
@@ -59,12 +60,36 @@ function Wrapper() {
 				/>
 			),
 			breadcrumbItems: () => [
-				{ label: 'Clients', to: '/' },
+				{ label: 'Clients', to: '/', clearState: true },
 				{
 					label: decodeClientSlug(params.slugName, true),
 					to: params.slugName ? `/client/${params.slugName}` : '/',
+					clearState: true,
 				},
 				{ label: 'Add Transaction' },
+			],
+		},
+		{
+			pattern: (path) =>
+				/^\/client\/[^/]+\/transaction\/review$/.test(path),
+			header: () => (
+				<h1 className="text-xl md:text-2xl font-bold tracking-tight">
+					Review Changes
+				</h1>
+			),
+			breadcrumbItems: () => [
+				{ label: 'Clients', to: '/', clearState: true },
+				{
+					label: decodeClientSlug(params.slugName, true),
+					to: params.slugName ? `/client/${params.slugName}` : '/',
+					clearState: true,
+				},
+				{
+					label: 'Add Transaction',
+					to: location.pathname.replace('/review', '/add'),
+					isEditLink: true,
+				},
+				{ label: 'Review Changes' },
 			],
 		},
 		{
@@ -86,10 +111,11 @@ function Wrapper() {
 				/>
 			),
 			breadcrumbItems: () => [
-				{ label: 'Clients', to: '/' },
+				{ label: 'Clients', to: '/', clearState: true },
 				{
 					label: decodeClientSlug(params.slugName, true),
 					to: params.slugName ? `/client/${params.slugName}` : '/',
+					clearState: true,
 				},
 				{ label: 'Edit Transaction' },
 			],
@@ -103,14 +129,16 @@ function Wrapper() {
 				</h1>
 			),
 			breadcrumbItems: () => [
-				{ label: 'Clients', to: '/' },
+				{ label: 'Clients', to: '/', clearState: true },
 				{
 					label: decodeClientSlug(params.slugName, true),
 					to: params.slugName ? `/client/${params.slugName}` : '/',
+					clearState: true,
 				},
 				{
 					label: 'Edit Transaction',
 					to: location.pathname.replace('/review', ''),
+					isEditLink: true,
 				},
 				{ label: 'Review Changes' },
 			],
@@ -145,9 +173,12 @@ function Wrapper() {
 							{index > 0 && <BreadcrumbSeparator />}
 							<BreadcrumbItem>
 								{item.to ? (
-									<BreadcrumbLink asChild>
-										<Link to={item.to}>{item.label}</Link>
-									</BreadcrumbLink>
+									<CustomBreadcrumbLink
+										to={item.to}
+										label={item.label}
+										shouldClearState={item.clearState}
+										isEditLink={item.isEditLink}
+									/>
 								) : (
 									<BreadcrumbLink>
 										{item.label}
