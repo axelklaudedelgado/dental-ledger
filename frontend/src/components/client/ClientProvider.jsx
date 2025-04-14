@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { fetchClients } from '../reducers/clientSlice'
+import { fetchClients } from '../../reducers/clientSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import { useLocation } from 'react-router-dom'
 

@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react'
-import { Spinner } from './ui/extensions/spinner'
+import { Spinner } from '../ui/extensions/spinner'
 
-export const ClientDesktopTable = ({ data, status, error, columns, type }) => {
+export const TransactionDesktopTable = ({
+	data,
+	status,
+	error,
+	columns,
+	type,
+}) => {
 	const [DataTable, setDataTable] = useState(null)
 	const [isLoading, setIsLoading] = useState(true)
 
 	useEffect(() => {
-		import('./dataTable/data-table')
+		import('../dataTable/data-table')
 			.then((module) => {
 				setDataTable(() => module.DataTable)
 				setIsLoading(false)

@@ -18,7 +18,7 @@ import {
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
-import { ClientForm } from '../../ClientForm'
+import { ClientForm } from '../../client/ClientForm'
 
 import { Button } from '@/components/ui/button'
 import { MoreHorizontal } from 'lucide-react'

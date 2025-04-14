@@ -1,8 +1,8 @@
 import { useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { fetchClientDetails } from '../reducers/clientSlice'
-import { TransactionTable } from './TransactionTable'
+import { fetchClientDetails } from '../../reducers/clientSlice'
+import { TransactionTable } from '../transaction/TransactionTable'
 import {
 	Card,
 	CardTitle,
@@ -10,10 +10,10 @@ import {
 	CardContent,
 	CardHeader,
 	CardFooter,
-} from './ui/card'
-import { Separator } from './ui/separator'
-import { Badge } from './ui/badge'
-import decodeClientSlug from '../utils/decodeClientSlug'
+} from '../ui/card'
+import { Separator } from '../ui/separator'
+import { Badge } from '../ui/badge'
+import decodeClientSlug from '../../utils/decodeClientSlug'
 
 export const ClientTransactions = () => {
 	const { slugName } = useParams()

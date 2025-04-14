@@ -1,7 +1,7 @@
 import { DataTablePagination } from './components/data-table-pagination'
 import { DataTableViewOptions } from './components/column-toggle'
 import { Search } from './components/data-table-search-filter'
-import { ClientForm } from '../ClientForm'
+import { ClientForm } from '../client/ClientForm'
 
 import * as React from 'react'
 import clsx from 'clsx'

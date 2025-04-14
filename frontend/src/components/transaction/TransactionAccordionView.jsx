@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { Spinner } from './ui/extensions/spinner'
+import { Spinner } from '../ui/extensions/spinner'
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -25,8 +25,8 @@ import {
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useDispatch } from 'react-redux'
-import { deleteTransaction } from '../reducers/clientSlice'
-import { useToast } from './ui/hooks/use-toast'
+import { deleteTransaction } from '@/reducers/clientSlice'
+import { useToast } from '../ui/hooks/use-toast'
 
 export const TransactionAccordionView = ({
 	transactions = [],

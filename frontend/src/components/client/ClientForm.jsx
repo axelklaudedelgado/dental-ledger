@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import * as yup from 'yup'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
-import { Button } from './ui/button'
+import { Button } from '../ui/button'
 import { Plus } from 'lucide-react'
-import { useToast } from './ui/hooks/use-toast'
+import { useToast } from '../ui/hooks/use-toast'
 import {
 	Dialog,
 	DialogContent,
@@ -13,7 +13,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 	DialogDescription,
-} from './ui/dialog'
+} from '../ui/dialog'
 import {
 	Form,
 	FormControl,
@@ -21,11 +21,11 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
-} from './ui/form'
-import { Input } from './ui/input'
-import { RadioGroup, RadioGroupItem } from './ui/radio-group'
-import { Checkbox } from './ui/checkbox'
-import { Alert, AlertDescription, AlertTitle } from './ui/alert'
+} from '../ui/form'
+import { Input } from '../ui/input'
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group'
+import { Checkbox } from '../ui/checkbox'
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 import { Pencil } from 'lucide-react'
 
 import { useDispatch } from 'react-redux'
@@ -33,7 +33,7 @@ import {
 	createClient,
 	checkClientName,
 	updateClient,
-} from '../reducers/clientSlice'
+} from '../../reducers/clientSlice'
 
 const schema = yup.object().shape({
 	title: yup

@@ -42,10 +42,10 @@ import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useSelector } from 'react-redux'
-import { fetchClientDetails } from '../reducers/clientSlice'
-import decodeClientSlug from '../utils/decodeClientSlug'
-import particularService from '../services/particularService'
-import transactionService from '../services/transactionService'
+import { fetchClientDetails } from '@/reducers/clientSlice'
+import decodeClientSlug from '@/utils/decodeClientSlug'
+import particularService from '@/services/particularService'
+import transactionService from '@/services/transactionService'
 
 const createSchema = (selectedClient) => {
 	return yup.object().shape({

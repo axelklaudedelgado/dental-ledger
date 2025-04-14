@@ -1,5 +1,5 @@
-import { useMediaQuery } from './ui/hooks/useMediaQuery'
-import { clientColumns } from './dataTable/columns/clientColumns'
+import { useMediaQuery } from '../ui/hooks/useMediaQuery'
+import { clientColumns } from '../dataTable/columns/clientColumns'
 import { ClientsCardView } from './ClientCardView'
 import { ClientDesktopTable } from './ClientDesktopTable'
 

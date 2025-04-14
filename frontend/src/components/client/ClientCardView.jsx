@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Spinner } from './ui/extensions/spinner'
+import { Spinner } from '../ui/extensions/spinner'
 import { Filter, Edit, Search, Trash2, Eye } from 'lucide-react'
 import { ClientForm } from './ClientForm'
 import {
@@ -28,8 +28,8 @@ import {
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useDispatch } from 'react-redux'
-import { deleteClient } from '../reducers/clientSlice'
-import { useToast } from './ui/hooks/use-toast'
+import { deleteClient } from '../../reducers/clientSlice'
+import { useToast } from '../ui/hooks/use-toast'
 
 const removeTitles = (name) => {
 	if (!name) return ''

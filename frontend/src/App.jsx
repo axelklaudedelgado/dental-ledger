@@ -3,12 +3,12 @@ import { useSelector } from 'react-redux'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 
 import Wrapper from './components/Wrapper'
-import { ClientTable } from './components/ClientTable'
-import { ClientTransactions } from './components/ClientTransactions'
+import { ClientTable } from '@/components/client/ClientTable'
+import { ClientTransactions } from '@/components/client/ClientTransactions'
 
-import TransactionForm from './components/TransactionForm'
-import TransactionReview from './components/TransactionReview'
-import ClientDataProvider from './components/ClientProvider'
+import TransactionForm from '@/components/transaction/TransactionForm'
+import TransactionReview from '@/components//transaction/TransactionReview'
+import ClientDataProvider from '@/components/client/ClientProvider'
 
 function App() {
 	const { clients, clientsStatus, clientsError, lastUpdated } = useSelector(

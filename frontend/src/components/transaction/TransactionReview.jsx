@@ -10,7 +10,7 @@ import {
 	CardTitle,
 } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Spinner } from './ui/extensions/spinner'
+import { Spinner } from '../ui/extensions/spinner'
 import { format } from 'date-fns'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
@@ -18,7 +18,7 @@ import {
 	createTransaction,
 	updateTransaction,
 	refreshClientList,
-} from '../reducers/clientSlice'
+} from '@/reducers/clientSlice'
 
 const TRANSACTION_STORAGE_KEY = 'pending_transaction_data'
 const TRANSACTION_SUBMITTED_KEY = 'transaction_submitted'

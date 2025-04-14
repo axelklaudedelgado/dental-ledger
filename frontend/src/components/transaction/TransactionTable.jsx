@@ -1,5 +1,5 @@
-import { useMediaQuery } from './ui/hooks/useMediaQuery'
-import { transactionColumns } from './dataTable/columns/transactionColumns'
+import { useMediaQuery } from '../ui/hooks/useMediaQuery'
+import { transactionColumns } from '../dataTable/columns/transactionColumns'
 import { TransactionAccordionView } from './TransactionAccordionView'
 import { TransactionDesktopTable } from './TransactionDesktopTable'
 
