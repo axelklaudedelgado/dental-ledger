@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
+import { useMediaQuery } from '@/components/ui/hooks/useMediaQuery'
 import {
 	Check,
 	ChevronsUpDown,
@@ -8,7 +9,24 @@ import {
 	PlusCircle,
 	X,
 	Pencil,
+	ChevronLeft,
+	ChevronRight,
 } from 'lucide-react'
+import {
+	format,
+	addDays,
+	addMonths,
+	startOfMonth,
+	endOfMonth,
+	eachDayOfInterval,
+	isSameDay,
+	getDay,
+	isValid,
+	parse,
+} from 'date-fns'
+import * as yup from 'yup'
+import { useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,17 +54,25 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from '@/components/ui/accordion'
+import {
+	Drawer,
+	DrawerContent,
+	DrawerHeader,
+	DrawerTitle,
+	DrawerDescription,
+} from '@/components/ui/drawer'
 import BalanceInfo from './BalanceInfo'
-import { format } from 'date-fns'
-import { useForm } from 'react-hook-form'
-import * as yup from 'yup'
-import { yupResolver } from '@hookform/resolvers/yup'
-import { useSelector } from 'react-redux'
+import BalanceDrawer from './BalanceDrawer'
 import { fetchClientDetails } from '@/reducers/clientSlice'
 import decodeClientSlug from '@/utils/decodeClientSlug'
 import particularService from '@/services/particularService'
 import transactionService from '@/services/transactionService'
-
 const createSchema = (selectedClient) => {
 	return yup.object().shape({
 		joNumber: yup.number().required('Job order number is required'),
@@ -171,29 +197,29 @@ const TRANSACTION_STORAGE_KEY = 'pending_transaction_data'
 const TRANSACTION_SUBMITTED_KEY = 'transaction_submitted'
 
 const TransactionForm = ({ isUpdateMode = false }) => {
-	const [openComboboxes, setOpenComboboxes] = useState({})
+	const isMobile = useMediaQuery('(max-width: 768px)')
+	const { slugName } = useParams()
+	const location = useLocation()
+	const navigate = useNavigate()
+	const dispatch = useDispatch()
+	const clientId = decodeClientSlug(slugName)
+	const { selectedClient } = useSelector((state) => state.clients)
+	const transactionId = isUpdateMode ? location.state?.id : null
+	const originalTransaction = isUpdateMode ? location.state : null
 	const [services, setServices] = useState([])
 	const [nextJONumber, setNextJONumber] = useState(null)
 	const [editingField, setEditingField] = useState(null)
-
+	const [openComboboxes, setOpenComboboxes] = useState({})
+	const [openAccordions, setOpenAccordions] = useState([])
+	const [datePickerOpen, setDatePickerOpen] = useState(false)
+	const [currentMonth, setCurrentMonth] = useState(new Date())
+	const [dateError, setDateError] = useState('')
+	const [inputValue, setInputValue] = useState(
+		format(new Date(), 'MM/dd/yyyy'),
+	)
 	const dateRef = useRef(null)
 	const remarksRef = useRef(null)
 	const serviceRefs = useRef([])
-
-	const { slugName } = useParams()
-	const location = useLocation()
-	const prevLocation = isUpdateMode
-		? location.pathname.replace('/transaction/edit', '')
-		: location.pathname.replace('/transaction/add', '')
-	const transactionId = isUpdateMode ? location.state.id : null
-	const originalTransaction = isUpdateMode ? location.state : null
-
-	const navigate = useNavigate()
-	const id = decodeClientSlug(slugName)
-	const dispatch = useDispatch()
-
-	const { selectedClient } = useSelector((state) => state.clients)
-
 	const getInitialData = () => {
 		const wasSubmitted =
 			sessionStorage.getItem(TRANSACTION_SUBMITTED_KEY) === 'true'
@@ -218,10 +244,70 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 	}
 
 	const formInitialData = getInitialData()
+	const form = useForm({
+		resolver: yupResolver(createSchema(selectedClient)),
+		defaultValues: {
+			joNumber: formInitialData?.joNumber || nextJONumber || '',
+			date: formInitialData?.date
+				? new Date(formInitialData.date)
+				: new Date(),
+			particulars: formInitialData?.particulars || [
+				{
+					particularId: null,
+					type: '',
+					name: '',
+					units: 1,
+					unitPrice: 0,
+				},
+			],
+			remarks:
+				formInitialData?.remarks === 'No remarks'
+					? ''
+					: formInitialData?.remarks || '',
+		},
+		mode: 'onChange',
+	})
+
+	const { watch, setValue, trigger, clearErrors, getValues } = form
+	const particulars = watch('particulars')
+	const totalAmount = particulars
+		.filter((p) => p.type === 'Service')
+		.reduce(
+			(sum, p) =>
+				sum + (Number(p.units) || 0) * (Number(p.unitPrice) || 0),
+			0,
+		)
+
+	const totalPayment = particulars
+		.filter((p) => p.type === 'Payment')
+		.reduce((sum, p) => sum + (Number(p.unitPrice) || 0), 0)
+
+	const balance = totalAmount - totalPayment
+	const isOverpayment = totalPayment > totalAmount
+
+	const projectedClientBalance =
+		isUpdateMode && originalTransaction
+			? (
+					(selectedClient?.totalBalance || 0) +
+					(balance -
+						(originalTransaction.amount -
+							originalTransaction.payment))
+				).toFixed(2)
+			: ((selectedClient?.totalBalance || 0) + balance).toFixed(2)
 
 	useEffect(() => {
-		dispatch(fetchClientDetails(id))
-	}, [id, dispatch])
+		if (
+			!isUpdateMode &&
+			particulars.length > 0 &&
+			openAccordions.length === 0
+		) {
+			setOpenAccordions(['item-0'])
+		}
+	}, [isUpdateMode, particulars.length, openAccordions.length])
+
+	useEffect(() => {
+		dispatch(fetchClientDetails(clientId))
+	}, [clientId, dispatch])
 
 	useEffect(() => {
 		const fetchServices = async () => {
@@ -247,6 +333,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 				try {
 					const data = await transactionService.nextJONumber()
 					setNextJONumber(data.nextJONumber)
+					setValue('joNumber', data.nextJONumber)
 				} catch (error) {
 					console.error('Error fetching JO number:', error)
 				}
@@ -254,7 +341,13 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 		}
 
 		fetchJONumber()
-	}, [formInitialData, nextJONumber])
+	}, [formInitialData, nextJONumber, setValue])
+
+	useEffect(() => {
+		if (nextJONumber && !formInitialData) {
+			setValue('joNumber', nextJONumber)
+		}
+	}, [nextJONumber, formInitialData, setValue])
 
 	useEffect(() => {
 		if (editingField) {
@@ -277,64 +370,38 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 		}
 	}, [editingField])
 
-	const form = useForm({
-		resolver: yupResolver(createSchema(selectedClient)),
-		defaultValues: {
-			joNumber: formInitialData?.joNumber || nextJONumber || '',
-			date: formInitialData?.date
-				? new Date(formInitialData.date)
-				: new Date(),
-			particulars: formInitialData?.particulars || [
-				{
-					particularId: null,
-					type: '',
-					name: '',
-					units: 1,
-					unitPrice: 0,
-				},
-			],
-			remarks:
-				formInitialData?.remarks === 'No remarks'
-					? ''
-					: formInitialData?.remarks || '',
-		},
-		mode: 'onChange',
-	})
+	useEffect(() => {
+		if (isUpdateMode && particulars.length > 0 && !editingField) {
+			const allAccordionValues = particulars.map(
+				(_, index) => `item-${index}`,
+			)
+			setOpenAccordions(allAccordionValues)
+		}
+	}, [isUpdateMode, particulars, editingField])
 
 	useEffect(() => {
-		if (nextJONumber && !formInitialData) {
-			form.setValue('joNumber', nextJONumber)
+		const formDate = getValues('date')
+		if (formDate) {
+			setInputValue(format(formDate, 'MM/dd/yyyy'))
 		}
-	}, [nextJONumber, formInitialData, form])
+	}, [getValues])
 
-	const { watch } = form
-	const particulars = watch('particulars')
-
-	const totalAmount = particulars
-		.filter((p) => p.type === 'Service')
-		.reduce(
-			(sum, p) =>
-				sum + (Number(p.units) || 0) * (Number(p.unitPrice) || 0),
-			0,
-		)
-
-	const totalPayment = particulars
-		.filter((p) => p.type === 'Payment')
-		.reduce((sum, p) => sum + (Number(p.unitPrice) || 0), 0)
-
-	const balance = totalAmount - totalPayment
+	useEffect(() => {
+		if (datePickerOpen) {
+			setCurrentMonth(getValues('date') || new Date())
+		}
+	}, [datePickerOpen, getValues])
 
 	const triggerAllPaymentValidations = async () => {
-		const formParticulars = form.getValues('particulars')
+		const formParticulars = getValues('particulars')
 		const paymentIndices = formParticulars
 			.map((p, index) => (p.type === 'Payment' ? index : -1))
 			.filter((index) => index !== -1)
 
 		for (const index of paymentIndices) {
-			await form.trigger(`particulars[${index}].unitPrice`)
+			await trigger(`particulars[${index}].unitPrice`)
 		}
 	}
-
 	const handleParticularChange = async (index, field, value) => {
 		const formParticulars = form.getValues('particulars')
 		const updatedParticulars = [...formParticulars]
@@ -386,7 +453,6 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 			await triggerAllPaymentValidations()
 		}
 	}
-
 	const addParticular = () => {
 		const formParticulars = form.getValues('particulars')
 		form.setValue('particulars', [
@@ -400,10 +466,24 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 			},
 		])
 
+		if (isMobile) {
+			const newIndex = particulars.length
+			setOpenAccordions([`item-${newIndex}`])
+		}
+
 		serviceRefs.current = serviceRefs.current.concat(null)
 	}
 
 	const removeParticular = async (index) => {
+		if (editingField === `particular-${index}`) {
+			setEditingField(null)
+		} else if (editingField && editingField.startsWith('particular-')) {
+			const editingIndex = parseInt(editingField.split('-')[1])
+			if (editingIndex > index) {
+				setEditingField(`particular-${editingIndex - 1}`)
+			}
+		}
+
 		const formParticulars = form.getValues('particulars')
 		form.setValue(
 			'particulars',
@@ -419,20 +499,98 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 		]
 
 		errorFields.forEach((field) => {
-			form.clearErrors(field)
+			clearErrors(field)
 		})
 
 		serviceRefs.current = serviceRefs.current.filter((_, i) => i !== index)
+		if (
+			isMobile &&
+			particulars.length > 1 &&
+			index === particulars.length - 1
+		) {
+			setOpenAccordions([`item-${particulars.length - 2}`])
+		}
 
 		await triggerAllPaymentValidations()
 	}
+
+	const handleDateInput = (e) => {
+		const value = e.target.value
+		setInputValue(value)
+		const isAddingText = value.length > inputValue.length
+
+		if (isAddingText) {
+			if (
+				value.length === 2 &&
+				!value.includes('/') &&
+				/^\d{2}$/.test(value)
+			) {
+				setInputValue(value + '/')
+			} else if (
+				value.length === 5 &&
+				value.charAt(2) === '/' &&
+				!value.includes('/', 3) &&
+				/^\d{2}\/\d{2}$/.test(value)
+			) {
+				setInputValue(value + '/')
+			}
+		}
+		if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+			validateDate(value)
+		} else if (value.length > 0) {
+			setDateError('')
+		}
+	}
+	const validateDate = (dateString) => {
+		try {
+			const parsedDate = parse(dateString, 'MM/dd/yyyy', new Date())
+
+			if (!isValid(parsedDate)) {
+				setDateError('Invalid date')
+				return
+			}
+			if (parsedDate > new Date(new Date().toDateString())) {
+				setDateError('Date cannot be in the future')
+				return
+			}
+			setValue('date', parsedDate)
+			setDateError('')
+		} catch (error) {
+			setDateError('Invalid date format')
+		}
+	}
+	const today = new Date()
+	const yesterday = addDays(today, -1)
+
+	const quickSelectOptions = [
+		{ label: 'Today', date: today },
+		{ label: 'Yesterday', date: yesterday },
+	]
+	const selectQuickDate = (selectedDate) => {
+		setValue('date', selectedDate)
+		setDatePickerOpen(false)
+		setInputValue(format(selectedDate, 'MM/dd/yyyy'))
+		setDateError('')
+	}
+	const previousMonth = () => {
+		setCurrentMonth(addMonths(currentMonth, -1))
+	}
+
+	const nextMonth = () => {
+		setCurrentMonth(addMonths(currentMonth, 1))
+	}
+	const monthStart = startOfMonth(currentMonth)
+	const monthEnd = endOfMonth(currentMonth)
+	const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
+	const startDay = getDay(monthStart)
+	const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
 	const onSubmit = (data) => {
 		const transaction = {
 			id: transactionId,
 			joNumber: data.joNumber,
 			date: format(data.date, 'yyyy-MM-dd'),
-			clientId: id,
+			clientId: clientId,
 			particulars: data.particulars.map((p) => ({
 				particularId: p.particularId,
 				name: p.name,
@@ -445,531 +603,1110 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 			payment: totalPayment,
 			balance,
 			clientTotalBalance: selectedClient?.totalBalance || 0,
-			projectedClientBalance:
-				(selectedClient?.totalBalance || 0) + balance,
+			projectedClientBalance: projectedClientBalance,
 		}
 
+		const currentPath = location.pathname
+
 		if (isUpdateMode) {
-			const currentPath = location.pathname
 			navigate(`${currentPath}/review`, { state: transaction })
 		} else {
-			const currentPath = location.pathname
 			const newPath = currentPath.replace('/add', '/review')
 			navigate(newPath, { state: transaction })
 		}
 	}
 
-	return (
-		<>
-			<Form {...form}>
-				<form
-					onSubmit={form.handleSubmit(onSubmit)}
-					className="space-y-6"
-				>
-					<div className="flex justify-between items-center mt-10">
-						<FormField
-							control={form.control}
-							name="joNumber"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Job Order #</FormLabel>
-									<FormControl>
-										<Input {...field} disabled />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+	if (isMobile) {
+		return (
+			<div className="px-4 py-6 space-y-6 max-w-md mx-auto">
+				<Form {...form}>
+					<form onSubmit={form.handleSubmit(onSubmit)}>
+						<div className="grid grid-cols-1 gap-4">
+							<div>
+								<Label htmlFor="joNumber">Job Order #</Label>
+								<Input
+									id="joNumber"
+									value={form.watch('joNumber')}
+									disabled
+									className="mt-1"
+								/>
+							</div>
 
-						<FormField
-							control={form.control}
-							name="date"
-							render={({ field }) => (
-								<FormItem className="flex flex-col">
-									<FormLabel>Date</FormLabel>
-									<FormControl>
-										<div className="relative">
-											<Popover>
-												<PopoverTrigger asChild>
+							<div>
+								<div className="flex justify-between items-center">
+									<Label htmlFor="date">Date</Label>
+									{isUpdateMode && (
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={() =>
+												setEditingField(
+													editingField === 'date'
+														? null
+														: 'date',
+												)
+											}
+											className={cn(
+												'text-xs h-10 w-10 px-2',
+												editingField === 'date'
+													? 'text-green-600'
+													: 'text-blue-600',
+											)}
+										>
+											{editingField === 'date'
+												? 'Done'
+												: 'Edit'}
+										</Button>
+									)}
+								</div>
+								<div className="relative mt-1">
+									<div className="flex">
+										<Input
+											id="date"
+											type="text"
+											placeholder="MM/DD/YYYY"
+											value={inputValue}
+											onChange={handleDateInput}
+											className={cn(
+												'h-12 text-base pr-12 border-2 focus:border-primary',
+												dateError && 'border-red-500',
+											)}
+											disabled={
+												isUpdateMode &&
+												editingField !== 'date'
+											}
+										/>
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="absolute right-0 top-0 h-12 w-12"
+											disabled={
+												isUpdateMode &&
+												editingField !== 'date'
+											}
+											onClick={() =>
+												setDatePickerOpen(true)
+											}
+										>
+											<CalendarIcon className="h-5 w-5" />
+										</Button>
+									</div>
+									{dateError && (
+										<p className="text-red-500 text-sm mt-1">
+											{dateError}
+										</p>
+									)}
+
+									<Drawer
+										open={datePickerOpen}
+										onOpenChange={setDatePickerOpen}
+									>
+										<DrawerContent className="p-0 max-h-[90vh]">
+											<DrawerHeader className="border-b px-4 py-3">
+												<DrawerTitle className="text-base font-medium">
+													Select Date
+												</DrawerTitle>
+												<DrawerDescription className="text-sm text-muted-foreground">
+													Choose a date for your
+													transaction
+												</DrawerDescription>
+											</DrawerHeader>
+
+											<div className="p-4">
+												<div className="grid grid-cols-2 gap-2 mb-6">
+													{quickSelectOptions.map(
+														(option) => (
+															<Button
+																key={
+																	option.label
+																}
+																variant="outline"
+																className="h-14 text-base"
+																onClick={() =>
+																	selectQuickDate(
+																		option.date,
+																	)
+																}
+															>
+																{option.label}
+															</Button>
+														),
+													)}
+												</div>
+
+												<div className="flex items-center justify-between mb-6">
 													<Button
 														variant="outline"
-														className="w-[240px] justify-start text-left font-normal"
-														disabled={
+														className="h-14 w-14 p-0"
+														onClick={previousMonth}
+													>
+														<ChevronLeft className="h-6 w-6" />
+													</Button>
+													<h2 className="text-xl font-medium">
+														{format(
+															currentMonth,
+															'MMMM yyyy',
+														)}
+													</h2>
+													<Button
+														variant="outline"
+														className="h-14 w-14 p-0"
+														onClick={nextMonth}
+													>
+														<ChevronRight className="h-6 w-6" />
+													</Button>
+												</div>
+
+												<div className="grid grid-cols-7 text-center mb-2">
+													{weekDays.map((day) => (
+														<div
+															key={day}
+															className="text-sm font-medium text-muted-foreground"
+														>
+															{day}
+														</div>
+													))}
+												</div>
+
+												<div className="grid grid-cols-7 gap-2">
+													{Array.from({
+														length: startDay,
+													}).map((_, index) => (
+														<div
+															key={`empty-${index}`}
+														></div>
+													))}
+
+													{days.map((day) => {
+														const isSelected =
+															isSameDay(
+																day,
+																form.watch(
+																	'date',
+																),
+															)
+														const isToday =
+															isSameDay(
+																day,
+																today,
+															)
+														const isFuture =
+															day > today
+
+														return (
+															<div
+																key={day.toString()}
+																className="flex justify-center"
+															>
+																<button
+																	type="button"
+																	onClick={() => {
+																		if (
+																			!isFuture
+																		) {
+																			setValue(
+																				'date',
+																				day,
+																			)
+																			setInputValue(
+																				format(
+																					day,
+																					'MM/dd/yyyy',
+																				),
+																			)
+																			setDatePickerOpen(
+																				false,
+																			)
+																			setDateError(
+																				'',
+																			)
+																		}
+																	}}
+																	disabled={
+																		isFuture
+																	}
+																	className={cn(
+																		'h-14 w-14 flex items-center justify-center rounded-md',
+																		isSelected &&
+																			'bg-black text-white',
+																		isToday &&
+																			!isSelected &&
+																			'border border-primary',
+																		isFuture &&
+																			'text-muted-foreground opacity-50',
+																		!isSelected &&
+																			!isToday &&
+																			!isFuture &&
+																			'hover:bg-muted',
+																	)}
+																>
+																	{format(
+																		day,
+																		'd',
+																	)}
+																</button>
+															</div>
+														)
+													})}
+												</div>
+											</div>
+										</DrawerContent>
+									</Drawer>
+								</div>
+							</div>
+						</div>
+
+						<div className="space-y-4 mt-6">
+							<Label>Particulars</Label>
+
+							<div className="space-y-3">
+								{particulars.map((particular, index) => (
+									<div
+										key={index}
+										className="border rounded-md overflow-hidden"
+									>
+										<Accordion
+											type="multiple"
+											value={openAccordions}
+											onValueChange={(value) => {
+												if (isUpdateMode) {
+													if (
+														editingField ===
+														`particular-${index}`
+													) {
+														setOpenAccordions(value)
+													}
+												} else {
+													setOpenAccordions(value)
+												}
+											}}
+										>
+											<AccordionItem
+												value={`item-${index}`}
+												className="border-0"
+											>
+												<AccordionTrigger
+													className={cn(
+														'px-4 py-4 hover:no-underline',
+														isUpdateMode &&
+															editingField !==
+																`particular-${index}` &&
+															'cursor-default',
+													)}
+													onClick={(e) => {
+														if (
 															isUpdateMode &&
 															editingField !==
-																'date'
+																`particular-${index}`
+														) {
+															e.preventDefault()
 														}
-														ref={dateRef}
-													>
-														<CalendarIcon className="mr-2 h-4 w-4" />
-														{format(
-															field.value,
-															'PPP',
-														)}
-													</Button>
-												</PopoverTrigger>
-												<PopoverContent
-													className="w-auto p-0"
-													align="start"
+													}}
 												>
-													<Calendar
-														mode="single"
-														selected={field.value}
-														onSelect={(date) => {
-															if (date) {
-																field.onChange(
-																	date,
-																)
-															}
-														}}
-														disabled={(date) =>
-															date >
-															new Date(
-																new Date().toDateString(),
-															)
-														}
-														initialFocus
-														classNames={{
-															day_selected:
-																'bg-zinc-900 text-white hover:bg-zinc-900 hover:text-white focus:bg-zinc-900 focus:text-white',
-															day_disabled:
-																'text-muted-foreground opacity-50 hover:bg-transparent hover:text-muted-foreground',
-															day_today:
-																'bg-accent text-accent-foreground',
-														}}
-													/>
-												</PopoverContent>
-											</Popover>
-											{isUpdateMode && (
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon"
-													className="absolute right-2 top-1/2 -translate-y-1/2"
-													onClick={() =>
-														setEditingField(
-															editingField ===
-																'date'
-																? null
-																: 'date',
-														)
-													}
-												>
-													<Pencil className="h-4 w-4" />
-												</Button>
-											)}
-										</div>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-					</div>
-
-					<div className="space-y-4">
-						<Label>Particulars</Label>
-						{particulars.map((particular, index) => (
-							<div
-								key={index}
-								className={cn(
-									'flex items-start gap-4 [&_:first-child]:flex-shrink p-2 rounded-md',
-									isUpdateMode &&
-										editingField ===
-											`particular-${index}` &&
-										'bg-muted/30',
-								)}
-							>
-								<FormField
-									control={form.control}
-									name={`particulars.${index}.particularId`}
-									render={({ field }) => (
-										<FormItem className="max-w-[240px] flex-1">
-											<FormLabel>
-												Service/Payment
-											</FormLabel>
-											<div className="relative">
-												<Popover
-													open={openComboboxes[index]}
-													onOpenChange={(open) =>
-														setOpenComboboxes(
-															(prev) => ({
-																...prev,
-																[index]: open,
-															}),
-														)
-													}
-												>
-													<PopoverTrigger asChild>
-														<FormControl>
-															<Button
-																variant="outline"
-																role="combobox"
-																aria-expanded={
-																	openComboboxes[
-																		index
-																	]
-																}
-																className="w-full justify-between whitespace-normal"
-																disabled={
-																	isUpdateMode &&
-																	editingField !==
-																		`particular-${index}`
-																}
-																ref={(el) => {
-																	serviceRefs.current[
-																		index
-																	] = el
-																}}
-															>
-																<span className="mr-2">
-																	{field.value
-																		? services.find(
-																				(
-																					service,
-																				) =>
-																					service.value ===
-																					field.value,
-																			)
-																				?.label
-																		: 'Select service...'}
+													<div className="flex justify-between items-center w-full">
+														<span className="truncate max-w-[150px]">
+															{particular.name ||
+																'Select service...'}
+														</span>
+														{particular.type ===
+															'Service' &&
+															particular.name && (
+																<span className="text-sm text-gray-600 mr-2 flex-shrink-0">
+																	{
+																		particular.units
+																	}{' '}
+																	× ₱
+																	{Number(
+																		particular.unitPrice,
+																	).toFixed(
+																		2,
+																	)}
 																</span>
-																<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-															</Button>
-														</FormControl>
-													</PopoverTrigger>
-													<PopoverContent
-														className="w-[var(--radix-popover-trigger-width)] p-0"
-														align="start"
-													>
-														<Command>
-															<CommandInput placeholder="Search service..." />
-															<CommandList>
-																<CommandEmpty>
-																	No service
-																	found.
-																</CommandEmpty>
-																<CommandGroup>
-																	{services.map(
-																		(
-																			service,
-																		) => (
-																			<CommandItem
-																				key={
-																					service.value
-																				}
-																				value={
-																					service.label
-																				}
-																				onSelect={() => {
-																					const newValue =
-																						field.value ===
-																						service.value
-																							? null
-																							: service.value
-																					field.onChange(
-																						newValue,
-																					)
-																					handleParticularChange(
-																						index,
-																						'particularId',
-																						newValue,
-																					)
+															)}
+														{particular.type ===
+															'Payment' && (
+															<span className="text-sm text-gray-600 mr-2 flex-shrink-0">
+																₱
+																{Number(
+																	particular.unitPrice,
+																).toFixed(2)}
+															</span>
+														)}
+													</div>
+												</AccordionTrigger>
+												<AccordionContent className="px-4 pb-4">
+													<div className="space-y-4">
+														<FormField
+															control={
+																form.control
+															}
+															name={`particulars.${index}.particularId`}
+															render={({
+																field,
+															}) => (
+																<FormItem>
+																	<FormLabel>
+																		Service/Payment
+																	</FormLabel>
+																	<FormControl>
+																		<Popover
+																			open={
+																				openComboboxes[
+																					index
+																				]
+																			}
+																			onOpenChange={(
+																				open,
+																			) => {
+																				if (
+																					!isUpdateMode ||
+																					editingField ===
+																						`particular-${index}`
+																				) {
 																					setOpenComboboxes(
 																						(
 																							prev,
 																						) => ({
 																							...prev,
-																							[index]: false,
+																							[index]:
+																								open,
 																						}),
 																					)
-																				}}
-																				disabled={
-																					service.label ===
-																						'Payment' &&
-																					particulars.some(
-																						(
-																							particular,
-																						) =>
-																							particular.name ===
-																							'Payment',
-																					)
 																				}
+																			}}
+																		>
+																			<PopoverTrigger
+																				asChild
 																			>
-																				<Check
-																					className={cn(
-																						'mr-2 h-4 w-4',
-																						field.value ===
-																							service.value
-																							? 'opacity-100'
-																							: 'opacity-0',
-																					)}
-																				/>
-																				{
-																					service.label
-																				}
-																			</CommandItem>
-																		),
-																	)}
-																</CommandGroup>
-															</CommandList>
-														</Command>
-													</PopoverContent>
-												</Popover>
-											</div>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								{particular.type === 'Service' &&
-									particulars[index].particularId && (
-										<FormField
-											control={form.control}
-											name={`particulars.${index}.units`}
-											render={({ field }) => (
-												<FormItem className="w-20 flex-none">
-													<FormLabel>Units</FormLabel>
-													<FormControl>
-														<Input
-															type="number"
-															{...field}
-															onChange={(e) => {
-																field.onChange(
-																	e.target
-																		.value,
-																)
-																handleParticularChange(
-																	index,
-																	'units',
-																	e.target
-																		.value,
-																)
-															}}
-															disabled={
-																isUpdateMode &&
-																editingField !==
-																	`particular-${index}`
-															}
-															min={1}
+																				<Button
+																					variant="outline"
+																					role="combobox"
+																					className="w-full justify-between mt-1 h-12 text-base"
+																					disabled={
+																						isUpdateMode &&
+																						editingField !==
+																							`particular-${index}`
+																					}
+																				>
+																					<span className="truncate">
+																						{field.value
+																							? services.find(
+																									(
+																										s,
+																									) =>
+																										s.value ===
+																										field.value,
+																								)
+																									?.label
+																							: 'Select service...'}
+																					</span>
+																					<ChevronsUpDown className="ml-2 h-5 w-5 shrink-0 opacity-50" />
+																				</Button>
+																			</PopoverTrigger>
+																			<PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+																				<Command>
+																					<CommandInput
+																						placeholder="Search service..."
+																						className="h-12"
+																					/>
+																					<CommandList>
+																						<CommandEmpty>
+																							No
+																							service
+																							found.
+																						</CommandEmpty>
+																						<CommandGroup>
+																							{services.map(
+																								(
+																									service,
+																								) => (
+																									<CommandItem
+																										key={
+																											service.value
+																										}
+																										value={
+																											service.label
+																										}
+																										onSelect={() => {
+																											const newValue =
+																												field.value ===
+																												service.value
+																													? null
+																													: service.value
+																											field.onChange(
+																												newValue,
+																											)
+																											handleParticularChange(
+																												index,
+																												'particularId',
+																												newValue,
+																											)
+																											setOpenComboboxes(
+																												(
+																													prev,
+																												) => ({
+																													...prev,
+																													[index]: false,
+																												}),
+																											)
+																										}}
+																										disabled={
+																											service.label ===
+																												'Payment' &&
+																											particulars.some(
+																												(
+																													particular,
+																												) =>
+																													particular.name ===
+																													'Payment',
+																											)
+																										}
+																										className="h-12 text-base"
+																									>
+																										<Check
+																											className={cn(
+																												'mr-2 h-5 w-5 flex-shrink-0',
+																												field.value ===
+																													service.value
+																													? 'opacity-100'
+																													: 'opacity-0',
+																											)}
+																										/>
+																										<span className="truncate">
+																											{
+																												service.label
+																											}
+																										</span>
+																									</CommandItem>
+																								),
+																							)}
+																						</CommandGroup>
+																					</CommandList>
+																				</Command>
+																			</PopoverContent>
+																		</Popover>
+																	</FormControl>
+																	<FormMessage />
+																</FormItem>
+															)}
 														/>
-													</FormControl>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									)}
 
-								{particulars[index].particularId && (
-									<FormField
-										control={form.control}
-										name={`particulars.${index}.unitPrice`}
-										render={({ field }) => (
-											<FormItem className="w-32 flex-none">
-												<FormLabel>
-													{particulars[index].type ===
-													'Payment'
-														? 'Payment Amount'
-														: 'Unit Price'}
-												</FormLabel>
-												<FormControl>
-													<Input
-														type="text"
-														{...field}
-														onChange={(e) => {
-															const value =
-																e.target.value
-															if (
-																value === '' ||
-																/^\d{1,8}(\.\d{0,2})?$/.test(
-																	value,
-																)
-															) {
-																field.onChange(
-																	value,
-																)
-																handleParticularChange(
-																	index,
-																	'unitPrice',
-																	value,
-																)
-															}
-														}}
-														onBlur={(e) => {
-															const value =
-																e.target.value
-															if (
-																value !== '' &&
-																value !== '.'
-															) {
-																const [
-																	integerPart,
-																	decimalPart,
-																] =
-																	value.split(
-																		'.',
-																	)
-																const formattedValue =
-																	integerPart +
-																	(decimalPart
-																		? '.' +
-																			decimalPart.padEnd(
-																				2,
-																				'0',
+														{particular.type ===
+															'Service' && (
+															<div className="grid grid-cols-2 gap-3">
+																<FormField
+																	control={
+																		form.control
+																	}
+																	name={`particulars.${index}.units`}
+																	render={({
+																		field,
+																	}) => (
+																		<FormItem>
+																			<FormLabel>
+																				Units
+																			</FormLabel>
+																			<FormControl>
+																				<Input
+																					type="number"
+																					{...field}
+																					onChange={(
+																						e,
+																					) => {
+																						field.onChange(
+																							Number(
+																								e
+																									.target
+																									.value,
+																							) ||
+																								0,
+																						)
+																						handleParticularChange(
+																							index,
+																							'units',
+																							Number(
+																								e
+																									.target
+																									.value,
+																							) ||
+																								0,
+																						)
+																					}}
+																					className="mt-1 h-12 text-base"
+																					min={
+																						1
+																					}
+																					disabled={
+																						isUpdateMode &&
+																						editingField !==
+																							`particular-${index}`
+																					}
+																				/>
+																			</FormControl>
+																			<FormMessage />
+																		</FormItem>
+																	)}
+																/>
+
+																<FormField
+																	control={
+																		form.control
+																	}
+																	name={`particulars.${index}.unitPrice`}
+																	render={({
+																		field,
+																	}) => (
+																		<FormItem>
+																			<FormLabel>
+																				Unit
+																				Price
+																			</FormLabel>
+																			<FormControl>
+																				<Input
+																					type="text"
+																					value={
+																						field.value
+																					}
+																					onChange={(
+																						e,
+																					) => {
+																						if (
+																							e
+																								.target
+																								.value ===
+																								'' ||
+																							/^\d{1,8}(\.\d{0,2})?$/.test(
+																								e
+																									.target
+																									.value,
+																							)
+																						) {
+																							const value =
+																								Number.parseFloat(
+																									e
+																										.target
+																										.value,
+																								) ||
+																								0
+																							field.onChange(
+																								value,
+																							)
+																							handleParticularChange(
+																								index,
+																								'unitPrice',
+																								value,
+																							)
+																						}
+																					}}
+																					onBlur={(
+																						e,
+																					) => {
+																						const value =
+																							e
+																								.target
+																								.value
+																						if (
+																							value !==
+																								'' &&
+																							value !==
+																								'.'
+																						) {
+																							const [
+																								integerPart,
+																								decimalPart,
+																							] =
+																								value.split(
+																									'.',
+																								)
+																							const formattedValue =
+																								integerPart +
+																								(decimalPart
+																									? '.' +
+																										decimalPart.padEnd(
+																											2,
+																											'0',
+																										)
+																									: '.00')
+																							field.onChange(
+																								formattedValue,
+																							)
+																							handleParticularChange(
+																								index,
+																								'unitPrice',
+																								formattedValue,
+																							)
+																						}
+																					}}
+																					className="mt-1 h-12 text-base"
+																					disabled={
+																						isUpdateMode &&
+																						editingField !==
+																							`particular-${index}`
+																					}
+																				/>
+																			</FormControl>
+																			<FormMessage />
+																		</FormItem>
+																	)}
+																/>
+															</div>
+														)}
+
+														{particular.type ===
+															'Payment' && (
+															<FormField
+																control={
+																	form.control
+																}
+																name={`particulars.${index}.unitPrice`}
+																render={({
+																	field,
+																}) => (
+																	<FormItem>
+																		<FormLabel>
+																			Payment
+																			Amount
+																		</FormLabel>
+																		<FormControl>
+																			<Input
+																				type="text"
+																				value={
+																					field.value
+																				}
+																				onChange={(
+																					e,
+																				) => {
+																					if (
+																						e
+																							.target
+																							.value ===
+																							'' ||
+																						/^\d{1,8}(\.\d{0,2})?$/.test(
+																							e
+																								.target
+																								.value,
+																						)
+																					) {
+																						const value =
+																							Number.parseFloat(
+																								e
+																									.target
+																									.value,
+																							) ||
+																							0
+																						field.onChange(
+																							value,
+																						)
+																						handleParticularChange(
+																							index,
+																							'unitPrice',
+																							value,
+																						)
+																					}
+																				}}
+																				onBlur={(
+																					e,
+																				) => {
+																					const value =
+																						e
+																							.target
+																							.value
+																					if (
+																						value !==
+																							'' &&
+																						value !==
+																							'.'
+																					) {
+																						const [
+																							integerPart,
+																							decimalPart,
+																						] =
+																							value.split(
+																								'.',
+																							)
+																						const formattedValue =
+																							integerPart +
+																							(decimalPart
+																								? '.' +
+																									decimalPart.padEnd(
+																										2,
+																										'0',
+																									)
+																								: '.00')
+																						field.onChange(
+																							formattedValue,
+																						)
+																						handleParticularChange(
+																							index,
+																							'unitPrice',
+																							formattedValue,
+																						)
+																					}
+																				}}
+																				className="mt-1 h-12 text-base"
+																				disabled={
+																					isUpdateMode &&
+																					editingField !==
+																						`particular-${index}`
+																				}
+																			/>
+																		</FormControl>
+																		<FormMessage />
+																	</FormItem>
+																)}
+															/>
+														)}
+
+														<div className="flex flex-col gap-2 mt-2">
+															{isUpdateMode && (
+																<Button
+																	type="button"
+																	variant="outline"
+																	size="lg"
+																	onClick={() => {
+																		if (
+																			editingField ===
+																			`particular-${index}`
+																		) {
+																			setEditingField(
+																				null,
 																			)
-																		: '.00')
-																field.onChange(
-																	formattedValue,
-																)
-																handleParticularChange(
-																	index,
-																	'unitPrice',
-																	formattedValue,
-																)
-															}
-														}}
-														disabled={
-															isUpdateMode &&
-															editingField !==
-																`particular-${index}`
-														}
-													/>
-												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
-								)}
-
-								<div className="flex items-center mt-8 space-x-1">
-									{isUpdateMode && (
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											onClick={() =>
-												setEditingField(
-													editingField ===
-														`particular-${index}`
-														? null
-														: `particular-${index}`,
-												)
-											}
-										>
-											<Pencil className="h-4 w-4" />
-										</Button>
-									)}
-
-									{particulars.length > 1 && (
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											onClick={() =>
-												removeParticular(index)
-											}
-											disabled={
-												isUpdateMode &&
-												editingField !==
-													`particular-${index}`
-											}
-										>
-											<X className="h-4 w-4" />
-										</Button>
-									)}
-								</div>
+																		} else {
+																			setEditingField(
+																				`particular-${index}`,
+																			)
+																			if (
+																				!openAccordions.includes(
+																					`item-${index}`,
+																				)
+																			) {
+																				setOpenAccordions(
+																					[
+																						...openAccordions,
+																						`item-${index}`,
+																					],
+																				)
+																			}
+																		}
+																	}}
+																	className={cn(
+																		'w-full h-14',
+																		editingField ===
+																			`particular-${index}`
+																			? 'text-green-600 hover:text-green-800 hover:bg-green-50'
+																			: 'text-blue-600 hover:text-blue-800 hover:bg-blue-50',
+																	)}
+																>
+																	{editingField ===
+																	`particular-${index}` ? (
+																		<>
+																			<Check className="mr-2 h-5 w-5" />{' '}
+																			Done
+																		</>
+																	) : (
+																		<>
+																			<Pencil className="mr-2 h-5 w-5" />{' '}
+																			Edit
+																		</>
+																	)}
+																</Button>
+															)}
+															{(!isUpdateMode ||
+																editingField ===
+																	`particular-${index}`) &&
+																particulars.length >
+																	1 && (
+																	<Button
+																		type="button"
+																		variant="ghost"
+																		size="lg"
+																		onClick={() =>
+																			removeParticular(
+																				index,
+																			)
+																		}
+																		className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 h-14"
+																	>
+																		<X className="mr-2 h-5 w-5" />{' '}
+																		Remove
+																	</Button>
+																)}
+														</div>
+													</div>
+												</AccordionContent>
+											</AccordionItem>
+										</Accordion>
+									</div>
+								))}
 							</div>
-						))}
-						{!isUpdateMode && (
-							<Button
-								type="button"
-								variant="outline"
-								onClick={addParticular}
-								className="mt-2"
-								disabled={
-									isUpdateMode &&
-									!editingField?.startsWith('particular-')
-								}
-							>
-								<PlusCircle className="mr-2 h-4 w-4" /> Add
-								Particular
-							</Button>
-						)}
-					</div>
-
-					<div className="space-y-4">
-						<div className="grid grid-cols-3 gap-4">
-							<div>
-								<Label>Total Amount</Label>
-								<Input
-									value={totalAmount.toFixed(2)}
-									readOnly
-								/>
-							</div>
-							<div>
-								<Label>Total Payment</Label>
-								<Input
-									value={totalPayment.toFixed(2)}
-									readOnly
-								/>
-							</div>
-							<div>
-								<Label>Balance</Label>
-								<Input
-									value={balance.toFixed(2)}
-									readOnly
-									className={cn(
-										balance < 0 &&
-											selectedClient?.totalBalance >=
-												Math.abs(balance)
-											? 'border-yellow-500'
-											: balance < 0
-												? 'border-red-500'
-												: '',
-									)}
-								/>
-							</div>
+							{!isUpdateMode && (
+								<Button
+									type="button"
+									variant="outline"
+									onClick={addParticular}
+									className="w-full h-14 text-base"
+								>
+									<PlusCircle className="mr-2 h-5 w-5" /> Add
+									Particular
+								</Button>
+							)}
 						</div>
 
-						<BalanceInfo
-							totalAmount={totalAmount}
-							totalPayment={totalPayment}
-							balance={balance}
-							selectedClient={selectedClient}
-							isUpdateMode={isUpdateMode}
-							originalTransaction={originalTransaction}
-						/>
-					</div>
+						<div className="space-y-4 border-t border-b py-4 mt-6">
+							<div className="grid grid-cols-2 gap-4">
+								<div>
+									<Label htmlFor="totalAmount">
+										Total Amount
+									</Label>
+									<Input
+										id="totalAmount"
+										value={totalAmount.toFixed(2)}
+										readOnly
+										className="mt-1 h-12 text-base"
+									/>
+								</div>
+
+								<div>
+									<Label htmlFor="totalPayment">
+										Total Payment
+									</Label>
+									<Input
+										id="totalPayment"
+										value={totalPayment.toFixed(2)}
+										readOnly
+										className="mt-1 h-12 text-base"
+									/>
+								</div>
+							</div>
+
+							<div>
+								<Label htmlFor="balance">Balance</Label>
+								<Input
+									id="balance"
+									value={balance.toFixed(2)}
+									readOnly
+									className="mt-1 h-12 text-base"
+								/>
+							</div>
+
+							<div
+								className={`p-4 border rounded-lg ${isOverpayment ? 'bg-yellow-50' : 'bg-blue-50'} mb-4`}
+							>
+								<div className="space-y-2">
+									<div className="flex justify-between items-center">
+										<span>
+											Current Transaction Balance:
+										</span>
+										<span className="font-medium">
+											₱{balance.toFixed(2)}
+										</span>
+									</div>
+
+									{isUpdateMode && originalTransaction && (
+										<div className="flex justify-between">
+											<span>Net Change:</span>
+											<span
+												className={`font-medium flex items-center ${
+													balance -
+														(originalTransaction.amount -
+															originalTransaction.payment) >
+													0
+														? 'text-red-600'
+														: balance -
+																	(originalTransaction.amount -
+																		originalTransaction.payment) <
+															  0
+															? 'text-green-600'
+															: ''
+												}`}
+											>
+												{balance -
+													(originalTransaction.amount -
+														originalTransaction.payment) >
+												0
+													? '↑'
+													: balance -
+																(originalTransaction.amount -
+																	originalTransaction.payment) <
+														  0
+														? '↓'
+														: ''}
+												₱
+												{Math.abs(
+													balance -
+														(originalTransaction.amount -
+															originalTransaction.payment),
+												).toFixed(2)}
+											</span>
+										</div>
+									)}
+
+									<div className="flex justify-between items-center">
+										<span>
+											Outstanding Balance (
+											{isUpdateMode
+												? 'Before Update'
+												: 'Before Transaction'}
+											):
+										</span>
+										<span>
+											₱
+											{(
+												selectedClient?.totalBalance ||
+												0
+											).toFixed(2)}
+										</span>
+									</div>
+
+									<div className="flex justify-between items-center border-t border-gray-200 pt-2 mt-1 font-medium">
+										<span>
+											Projected Balance (
+											{isUpdateMode
+												? 'After Update'
+												: 'After Transaction'}
+											):
+										</span>
+										<span>₱{projectedClientBalance}</span>
+									</div>
+								</div>
+							</div>
+
+							<BalanceDrawer
+								totalAmount={totalAmount}
+								totalPayment={totalPayment}
+								balance={balance}
+								clientBalance={
+									selectedClient?.totalBalance || 0
+								}
+								isUpdateMode={isUpdateMode}
+								originalTransaction={originalTransaction}
+							/>
+						</div>
+
+						<div className="mt-6">
+							<FormField
+								control={form.control}
+								name="remarks"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>
+											Remarks (Optional)
+										</FormLabel>
+										<FormControl>
+											<Textarea
+												{...field}
+												placeholder="Any additional notes..."
+												className="mt-1 h-20 text-base"
+												disabled={
+													isUpdateMode &&
+													editingField !== 'remarks'
+												}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</div>
+
+						<Button
+							type="submit"
+							className="w-full h-14 text-base mt-6"
+						>
+							{isUpdateMode
+								? 'Update Transaction'
+								: 'Review Transaction'}
+						</Button>
+					</form>
+				</Form>
+			</div>
+		)
+	}
+
+	return (
+		<Form {...form}>
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+				<div className="flex justify-between items-center mt-10">
+					<FormField
+						control={form.control}
+						name="joNumber"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Job Order #</FormLabel>
+								<FormControl>
+									<Input {...field} disabled />
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
 
 					<FormField
 						control={form.control}
-						name="remarks"
+						name="date"
 						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Remarks (Optional)</FormLabel>
+							<FormItem className="flex flex-col">
+								<FormLabel>Date</FormLabel>
 								<FormControl>
 									<div className="relative">
-										<Textarea
-											{...field}
-											placeholder="Any additional notes..."
-											className="h-24"
-											disabled={
-												isUpdateMode &&
-												editingField !== 'remarks'
-											}
-											ref={remarksRef}
-										/>
+										<Popover>
+											<PopoverTrigger asChild>
+												<Button
+													variant="outline"
+													className="w-[240px] justify-start text-left font-normal"
+													disabled={
+														isUpdateMode &&
+														editingField !== 'date'
+													}
+													ref={dateRef}
+												>
+													<CalendarIcon className="mr-2 h-4 w-4" />
+													{format(field.value, 'PPP')}
+												</Button>
+											</PopoverTrigger>
+											<PopoverContent
+												className="w-auto p-0"
+												align="start"
+											>
+												<Calendar
+													mode="single"
+													selected={field.value}
+													onSelect={(date) => {
+														if (date) {
+															field.onChange(date)
+														}
+													}}
+													disabled={(date) =>
+														date >
+														new Date(
+															new Date().toDateString(),
+														)
+													}
+													initialFocus
+													classNames={{
+														day_selected:
+															'bg-zinc-900 text-white hover:bg-zinc-900 hover:text-white focus:bg-zinc-900 focus:text-white',
+														day_disabled:
+															'text-muted-foreground opacity-50 hover:bg-transparent hover:text-muted-foreground',
+														day_today:
+															'bg-accent text-accent-foreground',
+													}}
+												/>
+											</PopoverContent>
+										</Popover>
 										{isUpdateMode && (
 											<Button
 												type="button"
 												variant="ghost"
 												size="icon"
-												className="absolute right-2 top-4"
+												className="absolute right-2 top-1/2 -translate-y-1/2"
 												onClick={() =>
 													setEditingField(
-														editingField ===
-															'remarks'
+														editingField === 'date'
 															? null
-															: 'remarks',
+															: 'date',
 													)
 												}
 											>
@@ -982,15 +1719,415 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 							</FormItem>
 						)}
 					/>
+				</div>
 
-					<Button type="submit" className="w-full">
-						{isUpdateMode
-							? 'Update Transaction'
-							: 'Review Transaction'}
-					</Button>
-				</form>
-			</Form>
-		</>
+				<div className="space-y-4">
+					<Label>Particulars</Label>
+					{particulars.map((particular, index) => (
+						<div
+							key={index}
+							className={cn(
+								'flex items-start gap-4 [&_:first-child]:flex-shrink p-2 rounded-md',
+								isUpdateMode &&
+									editingField === `particular-${index}` &&
+									'bg-muted/30',
+							)}
+						>
+							<FormField
+								control={form.control}
+								name={`particulars.${index}.particularId`}
+								render={({ field }) => (
+									<FormItem className="max-w-[240px] flex-1">
+										<FormLabel>Service/Payment</FormLabel>
+										<div className="relative">
+											<Popover
+												open={openComboboxes[index]}
+												onOpenChange={(open) =>
+													setOpenComboboxes(
+														(prev) => ({
+															...prev,
+															[index]: open,
+														}),
+													)
+												}
+											>
+												<PopoverTrigger asChild>
+													<FormControl>
+														<Button
+															variant="outline"
+															role="combobox"
+															aria-expanded={
+																openComboboxes[
+																	index
+																]
+															}
+															className="w-full justify-between whitespace-normal"
+															disabled={
+																isUpdateMode &&
+																editingField !==
+																	`particular-${index}`
+															}
+															ref={(el) => {
+																serviceRefs.current[
+																	index
+																] = el
+															}}
+														>
+															<span className="mr-2">
+																{field.value
+																	? services.find(
+																			(
+																				service,
+																			) =>
+																				service.value ===
+																				field.value,
+																		)?.label
+																	: 'Select service...'}
+															</span>
+															<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+														</Button>
+													</FormControl>
+												</PopoverTrigger>
+												<PopoverContent
+													className="w-[var(--radix-popover-trigger-width)] p-0"
+													align="start"
+												>
+													<Command>
+														<CommandInput placeholder="Search service..." />
+														<CommandList>
+															<CommandEmpty>
+																No service
+																found.
+															</CommandEmpty>
+															<CommandGroup>
+																{services.map(
+																	(
+																		service,
+																	) => (
+																		<CommandItem
+																			key={
+																				service.value
+																			}
+																			value={
+																				service.label
+																			}
+																			onSelect={() => {
+																				const newValue =
+																					field.value ===
+																					service.value
+																						? null
+																						: service.value
+																				field.onChange(
+																					newValue,
+																				)
+																				handleParticularChange(
+																					index,
+																					'particularId',
+																					newValue,
+																				)
+																				setOpenComboboxes(
+																					(
+																						prev,
+																					) => ({
+																						...prev,
+																						[index]: false,
+																					}),
+																				)
+																			}}
+																			disabled={
+																				service.label ===
+																					'Payment' &&
+																				particulars.some(
+																					(
+																						particular,
+																					) =>
+																						particular.name ===
+																						'Payment',
+																				)
+																			}
+																		>
+																			<Check
+																				className={cn(
+																					'mr-2 h-4 w-4',
+																					field.value ===
+																						service.value
+																						? 'opacity-100'
+																						: 'opacity-0',
+																				)}
+																			/>
+																			{
+																				service.label
+																			}
+																		</CommandItem>
+																	),
+																)}
+															</CommandGroup>
+														</CommandList>
+													</Command>
+												</PopoverContent>
+											</Popover>
+										</div>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							{particular.type === 'Service' &&
+								particulars[index].particularId && (
+									<FormField
+										control={form.control}
+										name={`particulars.${index}.units`}
+										render={({ field }) => (
+											<FormItem className="w-20 flex-none">
+												<FormLabel>Units</FormLabel>
+												<FormControl>
+													<Input
+														type="number"
+														{...field}
+														onChange={(e) => {
+															field.onChange(
+																Number(
+																	e.target
+																		.value,
+																),
+															)
+															handleParticularChange(
+																index,
+																'units',
+																Number(
+																	e.target
+																		.value,
+																),
+															)
+														}}
+														disabled={
+															isUpdateMode &&
+															editingField !==
+																`particular-${index}`
+														}
+														min={1}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								)}
+
+							{particulars[index].particularId && (
+								<FormField
+									control={form.control}
+									name={`particulars.${index}.unitPrice`}
+									render={({ field }) => (
+										<FormItem className="w-32 flex-none">
+											<FormLabel>
+												{particulars[index].type ===
+												'Payment'
+													? 'Payment Amount'
+													: 'Unit Price'}
+											</FormLabel>
+											<FormControl>
+												<Input
+													type="text"
+													value={field.value}
+													onChange={(e) => {
+														const value =
+															e.target.value
+														if (
+															value === '' ||
+															/^\d{1,8}(\.\d{0,2})?$/.test(
+																value,
+															)
+														) {
+															field.onChange(
+																value,
+															)
+															handleParticularChange(
+																index,
+																'unitPrice',
+																value,
+															)
+														}
+													}}
+													onBlur={(e) => {
+														const value =
+															e.target.value
+														if (
+															value !== '' &&
+															value !== '.'
+														) {
+															const [
+																integerPart,
+																decimalPart,
+															] = value.split('.')
+															const formattedValue =
+																integerPart +
+																(decimalPart
+																	? '.' +
+																		decimalPart.padEnd(
+																			2,
+																			'0',
+																		)
+																	: '.00')
+															field.onChange(
+																formattedValue,
+															)
+															handleParticularChange(
+																index,
+																'unitPrice',
+																formattedValue,
+															)
+														}
+													}}
+													disabled={
+														isUpdateMode &&
+														editingField !==
+															`particular-${index}`
+													}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							)}
+
+							<div className="flex items-center mt-8 space-x-1">
+								{isUpdateMode && (
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										onClick={() =>
+											setEditingField(
+												editingField ===
+													`particular-${index}`
+													? null
+													: `particular-${index}`,
+											)
+										}
+									>
+										<Pencil className="h-4 w-4" />
+									</Button>
+								)}
+
+								{particulars.length > 1 && (
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										onClick={() => removeParticular(index)}
+										disabled={
+											isUpdateMode &&
+											editingField !==
+												`particular-${index}`
+										}
+									>
+										<X className="h-4 w-4" />
+									</Button>
+								)}
+							</div>
+						</div>
+					))}
+					{(!isUpdateMode ||
+						editingField?.startsWith('particular-')) && (
+						<Button
+							type="button"
+							variant="outline"
+							onClick={addParticular}
+							className="mt-2"
+						>
+							<PlusCircle className="mr-2 h-4 w-4" /> Add
+							Particular
+						</Button>
+					)}
+				</div>
+
+				<div className="space-y-4">
+					<div className="grid grid-cols-3 gap-4">
+						<div>
+							<Label>Total Amount</Label>
+							<Input value={totalAmount.toFixed(2)} readOnly />
+						</div>
+						<div>
+							<Label>Total Payment</Label>
+							<Input value={totalPayment.toFixed(2)} readOnly />
+						</div>
+						<div>
+							<Label>Balance</Label>
+							<Input
+								value={balance.toFixed(2)}
+								readOnly
+								className={cn(
+									balance < 0 &&
+										selectedClient?.totalBalance >=
+											Math.abs(balance)
+										? 'border-yellow-500'
+										: balance < 0
+											? 'border-red-500'
+											: '',
+								)}
+							/>
+						</div>
+					</div>
+
+					<BalanceInfo
+						totalAmount={totalAmount}
+						totalPayment={totalPayment}
+						balance={balance}
+						selectedClient={selectedClient}
+						isUpdateMode={isUpdateMode}
+						originalTransaction={originalTransaction}
+					/>
+				</div>
+
+				<FormField
+					control={form.control}
+					name="remarks"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Remarks (Optional)</FormLabel>
+							<FormControl>
+								<div className="relative">
+									<Textarea
+										{...field}
+										placeholder="Any additional notes..."
+										className="h-24"
+										disabled={
+											isUpdateMode &&
+											editingField !== 'remarks'
+										}
+										ref={remarksRef}
+									/>
+									{isUpdateMode && (
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="absolute right-2 top-4"
+											onClick={() =>
+												setEditingField(
+													editingField === 'remarks'
+														? null
+														: 'remarks',
+												)
+											}
+										>
+											<Pencil className="h-4 w-4" />
+										</Button>
+									)}
+								</div>
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<Button type="submit" className="w-full">
+					{isUpdateMode ? 'Update Transaction' : 'Review Transaction'}
+				</Button>
+			</form>
+		</Form>
 	)
 }
 
