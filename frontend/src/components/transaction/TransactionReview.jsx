@@ -85,8 +85,7 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 	const handleEdit = () => {
 		if (isUpdateMode) {
 			const editPath = currentPath.replace('/review', '')
-			console.log(transaction)
-			navigate(editPath, { state: transaction })
+			navigate(editPath, { state: { ...transaction, edit: true } })
 		} else {
 			const newPath = currentPath.replace('/review', '/add')
 			navigate(newPath, { state: transaction })
@@ -251,7 +250,7 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 						<strong>
 							Projected Client Balance (After This Transaction):
 						</strong>{' '}
-						₱{transaction.projectedClientBalance.toFixed(2)}
+						₱{transaction.projectedClientBalance}
 					</p>
 				)}
 			</div>

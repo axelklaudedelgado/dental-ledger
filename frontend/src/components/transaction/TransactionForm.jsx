@@ -204,8 +204,11 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 	const dispatch = useDispatch()
 	const clientId = decodeClientSlug(slugName)
 	const { selectedClient } = useSelector((state) => state.clients)
-	const transactionId = isUpdateMode ? location.state?.id : null
-	const originalTransaction = isUpdateMode ? location.state : null
+	const transactionId = isUpdateMode ? location.state.id : null
+	const originalTransaction =
+		isUpdateMode && location.state.edit
+			? location.state.originalTransaction
+			: location.state
 	const [services, setServices] = useState([])
 	const [nextJONumber, setNextJONumber] = useState(null)
 	const [editingField, setEditingField] = useState(null)
@@ -603,6 +606,10 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 			payment: totalPayment,
 			balance,
 			clientTotalBalance: selectedClient?.totalBalance || 0,
+			originalTransaction: {
+				amount: originalTransaction?.amount || 0,
+				payment: originalTransaction?.payment || 0,
+			},
 			projectedClientBalance: projectedClientBalance,
 		}
 
