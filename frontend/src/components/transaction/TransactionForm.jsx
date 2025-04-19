@@ -230,6 +230,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 	const [inputValue, setInputValue] = useState(
 		format(new Date(), 'MM/dd/yyyy'),
 	)
+	const initialAccordionOpened = useRef(false)
 	const dateRef = useRef(null)
 	const remarksRef = useRef(null)
 	const serviceRefs = useRef([])
@@ -282,7 +283,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 		mode: 'onChange',
 	})
 
-	const { watch, setValue, trigger, clearErrors, getValues } = form
+	const { watch, setValue, trigger, clearErrors, getValues, formState } = form
 	const particulars = watch('particulars')
 	const totalAmount = particulars
 		.filter((p) => p.type === 'Service')
@@ -311,11 +312,50 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 
 	useEffect(() => {
 		if (
+			isMobile &&
+			formState.errors.particulars &&
+			formState.submitCount > 0
+		) {
+			const errorIndices = Object.keys(
+				formState.errors.particulars || {},
+			).map(Number)
+
+			if (errorIndices.length > 0) {
+				const accordionsWithErrors = errorIndices.map(
+					(index) => `item-${index}`,
+				)
+
+				setOpenAccordions((prev) => {
+					const newOpenAccordions = [...prev]
+
+					accordionsWithErrors.forEach((id) => {
+						if (!newOpenAccordions.includes(id)) {
+							newOpenAccordions.push(id)
+						}
+					})
+
+					if (
+						newOpenAccordions.length === prev.length &&
+						newOpenAccordions.every((id) => prev.includes(id))
+					) {
+						return prev
+					}
+
+					return newOpenAccordions
+				})
+			}
+		}
+	}, [formState.errors.particulars, formState.submitCount, isMobile])
+
+	useEffect(() => {
+		if (
 			!isUpdateMode &&
-			particulars.length > 0 &&
-			openAccordions.length === 0
+			particulars.length === 1 &&
+			openAccordions.length === 0 &&
+			!initialAccordionOpened.current
 		) {
 			setOpenAccordions(['item-0'])
+			initialAccordionOpened.current = true
 		}
 	}, [isUpdateMode, particulars.length, openAccordions.length])
 
