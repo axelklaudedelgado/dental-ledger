@@ -87,7 +87,7 @@ const CustomBreadcrumbLink = ({ to, label, shouldClearState = false, isEditLink 
     return (
         <>
             <BreadcrumbLink asChild>
-                <Link to={to} onClick={handleClick}>{label}</Link>
+                <Link to={to} onClick={handleClick} className="max-w-[120px] truncate">{label}</Link>
             </BreadcrumbLink>
         
             <AlertDialog open={showDialog} onOpenChange={setShowDialog}>

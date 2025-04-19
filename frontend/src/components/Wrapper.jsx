@@ -180,7 +180,7 @@ function Wrapper() {
 										isEditLink={item.isEditLink}
 									/>
 								) : (
-									<BreadcrumbLink>
+									<BreadcrumbLink className="max-w-[120px] truncate block">
 										{item.label}
 									</BreadcrumbLink>
 								)}
