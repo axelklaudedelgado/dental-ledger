@@ -230,10 +230,15 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 	const [inputValue, setInputValue] = useState(
 		format(new Date(), 'MM/dd/yyyy'),
 	)
+	const [canFocus, setCanFocus] = useState(true)
 	const initialAccordionOpened = useRef(false)
 	const dateRef = useRef(null)
 	const remarksRef = useRef(null)
 	const serviceRefs = useRef([])
+
+	const onError = () => {
+		setCanFocus(true)
+	}
 	const getInitialData = () => {
 		const wasSubmitted =
 			sessionStorage.getItem(TRANSACTION_SUBMITTED_KEY) === 'true'
@@ -281,6 +286,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 					: formInitialData?.remarks || '',
 		},
 		mode: 'onChange',
+		shouldFocusError: false,
 	})
 
 	const { watch, setValue, trigger, clearErrors, getValues, formState } = form
@@ -346,6 +352,29 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 			}
 		}
 	}, [formState.errors.particulars, formState.submitCount, isMobile])
+
+	useEffect(() => {
+		if (formState.errors && canFocus) {
+			const elements = Object.keys(formState.errors)
+				.map((name) => document.getElementsByName(name)[0])
+				.filter((el) => !!el)
+			elements.sort(
+				(a, b) =>
+					a.getBoundingClientRect().top -
+					b.getBoundingClientRect().top,
+			)
+
+			if (elements.length > 0) {
+				let errorElement = elements[0]
+				errorElement.scrollIntoView({
+					behavior: 'smooth',
+					block: 'center',
+				})
+				errorElement.focus({ preventScroll: true })
+				setCanFocus(false)
+			}
+		}
+	}, [formState, canFocus])
 
 	useEffect(() => {
 		if (
@@ -757,7 +786,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 		return (
 			<div className="px-4 py-6 space-y-6 max-w-md mx-auto">
 				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)}>
+					<form onSubmit={form.handleSubmit(onSubmit, onError)}>
 						<div className="grid grid-cols-1 gap-4">
 							<div>
 								<Label htmlFor="joNumber">Job Order #</Label>
@@ -801,6 +830,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 									<div className="flex">
 										<Input
 											id="date"
+											name="date"
 											type="text"
 											inputMode="numeric"
 											pattern="\d{2}/\d{2}/\d{4}"
@@ -1053,6 +1083,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 											<AccordionItem
 												value={`item-${index}`}
 												className="border-0"
+												name="particulars"
 											>
 												<AccordionTrigger
 													className={cn(
