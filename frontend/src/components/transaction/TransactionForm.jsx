@@ -73,16 +73,27 @@ import { fetchClientDetails } from '@/reducers/clientSlice'
 import decodeClientSlug from '@/utils/decodeClientSlug'
 import particularService from '@/services/particularService'
 import transactionService from '@/services/transactionService'
+
+const minimumDate = new Date(2000, 0, 1)
 const createSchema = (selectedClient) => {
 	return yup.object().shape({
 		joNumber: yup.number().required('Job order number is required'),
 		date: yup
 			.date()
 			.required('Date is required')
-			.transform((value) => {
+			.transform((value, originalValue) => {
 				if (!value) return value
-				return new Date(value.toDateString())
+
+				if (value instanceof Date && !isNaN(value)) {
+					return new Date(value.toDateString())
+				}
+
+				return value
 			})
+			.min(
+				minimumDate,
+				`Date cannot be before ${format(minimumDate, 'MM/dd/yyyy')}`,
+			)
 			.max(
 				new Date(new Date().toDateString()),
 				'Date cannot be in the future',
@@ -216,7 +227,6 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 	const [openAccordions, setOpenAccordions] = useState([])
 	const [datePickerOpen, setDatePickerOpen] = useState(false)
 	const [currentMonth, setCurrentMonth] = useState(new Date())
-	const [dateError, setDateError] = useState('')
 	const [inputValue, setInputValue] = useState(
 		format(new Date(), 'MM/dd/yyyy'),
 	)
@@ -247,6 +257,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 	}
 
 	const formInitialData = getInitialData()
+
 	const form = useForm({
 		resolver: yupResolver(createSchema(selectedClient)),
 		defaultValues: {
@@ -538,30 +549,108 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 				setInputValue(value + '/')
 			}
 		}
+
 		if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-			validateDate(value)
+			try {
+				const parsedDate = parse(value, 'MM/dd/yyyy', new Date())
+
+				if (isValid(parsedDate)) {
+					setValue('date', parsedDate)
+
+					if (parsedDate > new Date(new Date().toDateString())) {
+						form.setError('date', {
+							type: 'manual',
+							message: 'Date cannot be in the future',
+						})
+					} else if (parsedDate < minimumDate) {
+						form.setError('date', {
+							type: 'manual',
+							message: `Date cannot be before ${format(minimumDate, 'MM/dd/yyyy')}`,
+						})
+					} else {
+						form.clearErrors('date')
+					}
+				} else {
+					form.setError('date', {
+						type: 'manual',
+						message: 'Invalid date',
+					})
+				}
+			} catch (error) {
+				form.setError('date', {
+					type: 'manual',
+					message: 'Invalid date format',
+				})
+			}
 		} else if (value.length > 0) {
-			setDateError('')
+			form.setError('date', {
+				type: 'manual',
+				message: 'Please complete the date in MM/DD/YYYY format',
+			})
+		} else {
+			form.clearErrors('date')
 		}
 	}
+
+	const handleDateBlur = () => {
+		if (inputValue) {
+			if (/^\d{2}\/\d{2}\/\d{4}$/.test(inputValue)) {
+				validateDate(inputValue)
+			} else {
+				form.setError('date', {
+					type: 'manual',
+					message: 'Invalid date format. Use MM/DD/YYYY',
+				})
+			}
+		}
+	}
+
 	const validateDate = (dateString) => {
 		try {
+			if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+				form.setError('date', {
+					type: 'manual',
+					message: 'Invalid date format. Use MM/DD/YYYY',
+				})
+				return
+			}
+
 			const parsedDate = parse(dateString, 'MM/dd/yyyy', new Date())
 
 			if (!isValid(parsedDate)) {
-				setDateError('Invalid date')
+				form.setError('date', {
+					type: 'manual',
+					message: 'Invalid date',
+				})
 				return
 			}
+
 			if (parsedDate > new Date(new Date().toDateString())) {
-				setDateError('Date cannot be in the future')
+				form.setError('date', {
+					type: 'manual',
+					message: 'Date cannot be in the future',
+				})
 				return
 			}
+
+			if (parsedDate < minimumDate) {
+				form.setError('date', {
+					type: 'manual',
+					message: `Date cannot be before ${format(minimumDate, 'MM/dd/yyyy')}`,
+				})
+				return
+			}
+
 			setValue('date', parsedDate)
-			setDateError('')
+			form.clearErrors('date')
 		} catch (error) {
-			setDateError('Invalid date format')
+			form.setError('date', {
+				type: 'manual',
+				message: 'Invalid date format',
+			})
 		}
 	}
+
 	const today = new Date()
 	const yesterday = addDays(today, -1)
 
@@ -569,11 +658,12 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 		{ label: 'Today', date: today },
 		{ label: 'Yesterday', date: yesterday },
 	]
+
 	const selectQuickDate = (selectedDate) => {
 		setValue('date', selectedDate)
 		setDatePickerOpen(false)
 		setInputValue(format(selectedDate, 'MM/dd/yyyy'))
-		setDateError('')
+		form.clearErrors('date')
 	}
 	const previousMonth = () => {
 		setCurrentMonth(addMonths(currentMonth, -1))
@@ -672,17 +762,31 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 										<Input
 											id="date"
 											type="text"
+											inputMode="numeric"
+											pattern="\d{2}/\d{2}/\d{4}"
 											placeholder="MM/DD/YYYY"
 											value={inputValue}
 											onChange={handleDateInput}
 											className={cn(
-												'h-12 text-base pr-12 border-2 focus:border-primary',
-												dateError && 'border-red-500',
+												'h-12 text-base pr-12 border-2',
+												form.formState.errors.date
+													? 'border-red-500 focus:border-red-500'
+													: 'focus:border-primary',
 											)}
 											disabled={
 												isUpdateMode &&
 												editingField !== 'date'
 											}
+											aria-invalid={
+												!!form.formState.errors.date
+											}
+											aria-describedby={
+												form.formState.errors.date
+													? 'date-error'
+													: undefined
+											}
+											onBlur={handleDateBlur}
+											ref={dateRef}
 										/>
 										<Button
 											type="button"
@@ -700,9 +804,18 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 											<CalendarIcon className="h-5 w-5" />
 										</Button>
 									</div>
-									{dateError && (
-										<p className="text-red-500 text-sm mt-1">
-											{dateError}
+									{!form.formState.errors.date && (
+										<p className="text-gray-500 text-xs mt-1">
+											Format: MM/DD/YYYY (e.g.,
+											01/15/2023)
+										</p>
+									)}
+									{form.formState.errors.date && (
+										<p
+											id="date-error"
+											className="text-red-500 text-sm mt-1"
+										>
+											{form.formState.errors.date.message}
 										</p>
 									)}
 
@@ -801,6 +914,8 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 															)
 														const isFuture =
 															day > today
+														const isPast =
+															day < minimumDate
 
 														return (
 															<div
@@ -826,13 +941,14 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 																			setDatePickerOpen(
 																				false,
 																			)
-																			setDateError(
-																				'',
+																			form.clearErrors(
+																				'date',
 																			)
 																		}
 																	}}
 																	disabled={
-																		isFuture
+																		isFuture ||
+																		isPast
 																	}
 																	className={cn(
 																		'h-14 w-14 flex items-center justify-center rounded-md',
@@ -842,11 +958,15 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 																			!isSelected &&
 																			'border border-primary',
 																		isFuture &&
-																			'text-muted-foreground opacity-50',
+																			'text-muted-foreground opacity-50 cursor-not-allowed',
 																		!isSelected &&
 																			!isToday &&
 																			!isFuture &&
 																			'hover:bg-muted',
+																	)}
+																	aria-label={format(
+																		day,
+																		'MMMM d, yyyy',
 																	)}
 																>
 																	{format(
@@ -1687,9 +1807,10 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 													}}
 													disabled={(date) =>
 														date >
-														new Date(
-															new Date().toDateString(),
-														)
+															new Date(
+																new Date().toDateString(),
+															) ||
+														date < minimumDate
 													}
 													initialFocus
 													classNames={{
