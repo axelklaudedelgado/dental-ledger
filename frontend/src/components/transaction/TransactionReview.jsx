@@ -174,7 +174,7 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 				<Button
 					onClick={() => navigate(clientTransactionsPath)}
 					variant="outline"
-					className="mt-4"
+					className="mt-4 4 w-full md:w-auto"
 				>
 					Back to Client's Transactions
 				</Button>
@@ -269,9 +269,9 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 				</CardTitle>
 			</CardHeader>
 			<CardContent>
-				<ScrollArea className="h-[60vh] pr-4">
+				<div className="md:hidden">
 					{isLoading ? (
-						<div className="h-full flex items-center justify-center">
+						<div className="flex items-center justify-center py-10">
 							<Spinner size="large">
 								{isUpdateMode ? 'Updating' : 'Creating'}{' '}
 								Transaction...
@@ -317,18 +317,74 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 							{renderContent()}
 						</>
 					)}
-				</ScrollArea>
+				</div>
+
+				<div className="hidden md:block">
+					<ScrollArea className="h-[60vh] pr-4">
+						{isLoading ? (
+							<div className="h-full flex items-center justify-center">
+								<Spinner size="large">
+									{isUpdateMode ? 'Updating' : 'Creating'}{' '}
+									Transaction...
+								</Spinner>
+							</div>
+						) : (
+							<>
+								{error && (
+									<Alert className="mb-6 bg-red-50 border-red-200">
+										<div className="flex items-start gap-4">
+											<AlertCircle className="h-6 w-6 text-red-500 mt-1" />
+											<div>
+												<AlertTitle className="text-lg font-semibold text-red-800">
+													Error
+												</AlertTitle>
+												<AlertDescription className="text-red-700">
+													{error}
+												</AlertDescription>
+											</div>
+										</div>
+									</Alert>
+								)}
+								{isSubmitted && (
+									<Alert className="mb-6 bg-emerald-50 border-emerald-200">
+										<div className="flex items-start gap-4">
+											<CheckCircle2 className="h-6 w-6 text-emerald-500 mt-1" />
+											<div>
+												<AlertTitle className="text-lg font-semibold text-emerald-800">
+													Success
+												</AlertTitle>
+												<AlertDescription className="text-emerald-700">
+													Transaction has been
+													successfully{' '}
+													{isUpdateMode
+														? 'updated'
+														: 'created and recorded'}
+													.
+												</AlertDescription>
+											</div>
+										</div>
+									</Alert>
+								)}
+								{renderContent()}
+							</>
+						)}
+					</ScrollArea>
+				</div>
 			</CardContent>
-			<CardFooter className="flex justify-between">
+			<CardFooter className="flex flex-col md:flex-row gap-3 md:justify-between">
 				{isSubmitted ? (
 					<>
 						<Button
 							variant="outline"
 							onClick={handleBackToClientTransactions}
+							className="w-full h-14 font-medium text-base md:w-auto md:h-10"
 						>
 							Back to Client's Transactions
 						</Button>
-						<Button onClick={() => window.print()}>
+						<Button
+							onClick={() => window.print()}
+							className="w-full h-14 font-medium text-base md:w-auto md:h-10"
+						>
 							Print Summary
 						</Button>
 					</>
@@ -338,10 +394,15 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 							variant="outline"
 							onClick={handleEdit}
 							disabled={isLoading}
+							className="w-full h-14 font-medium text-base md:w-auto md:h-10"
 						>
 							Edit
 						</Button>
-						<Button onClick={onSubmit} disabled={isLoading}>
+						<Button
+							onClick={onSubmit}
+							disabled={isLoading}
+							className="w-full h-14 font-medium text-base md:w-auto md:h-10"
+						>
 							{isLoading
 								? isUpdateMode
 									? 'Updating...'
