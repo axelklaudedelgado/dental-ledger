@@ -784,7 +784,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 
 	if (isMobile) {
 		return (
-			<div className="px-4 py-6 space-y-6 max-w-md mx-auto">
+			<div className="py-6 space-y-6 max-w-md mx-auto">
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit, onError)}>
 						<div className="grid grid-cols-1 gap-4">
