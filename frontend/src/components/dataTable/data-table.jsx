@@ -124,8 +124,15 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 				isPinned && 'bg-yellow-100 animate-pulse',
 			)}
 			onClick={() => {
-				const { slugName } = row.original
-				navigate(`/${type}/${slugName}`)
+				if (type === 'client') {
+					const { slugName } = row.original
+					navigate(`/${type}/${slugName}`)
+				} else {
+					const { id } = row.original
+					navigate(`${location.pathname}/${type}/${id}`, {
+						state: row.original,
+					})
+				}
 			}}
 		>
 			{row.getVisibleCells().map((cell) => (

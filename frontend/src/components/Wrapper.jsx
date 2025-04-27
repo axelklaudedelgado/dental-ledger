@@ -43,6 +43,29 @@ function Wrapper() {
 			],
 		},
 		{
+			pattern: (path) => /^\/client\/[^/]+\/transaction\/\d+$/.test(path),
+			header: () => (
+				<h1 className="text-xl md:text-2xl font-bold tracking-tight">
+					Transaction Summary
+				</h1>
+			),
+			backButton: () => (
+				<BackButton
+					navigateRoute={`/client/${params.slugName}`}
+					preserveState={false}
+				/>
+			),
+			breadcrumbItems: () => [
+				{ label: 'Clients', to: '/', clearState: true },
+				{
+					label: decodeClientSlug(params.slugName, true),
+					to: params.slugName ? `/client/${params.slugName}` : '/',
+					clearState: true,
+				},
+				{ label: `Transaction #${location.state.joNumber || ''}` },
+			],
+		},
+		{
 			pattern: (path) => /^\/client\/[^/]+\/transaction\/add$/.test(path),
 			header: () => (
 				<h1 className="text-xl md:text-2xl font-bold tracking-tight">

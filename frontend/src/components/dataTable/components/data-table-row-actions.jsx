@@ -71,7 +71,15 @@ export function TableRowActions({ row, type }) {
 	}
 
 	const handleViewDetails = () => {
-		navigate(`/${type}/${row.original.id}`)
+		if (type === 'client') {
+			const { slugName } = row.original
+			navigate(`/${type}/${slugName}`)
+		} else {
+			const { id } = row.original
+			navigate(`${location.pathname}/${type}/${id}`, {
+				state: row.original,
+			})
+		}
 	}
 
 	const handleClientUpdated = () => {

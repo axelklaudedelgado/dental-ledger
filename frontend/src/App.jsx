@@ -6,6 +6,7 @@ import Wrapper from './components/Wrapper'
 import { ClientTable } from '@/components/client/ClientTable'
 import { ClientTransactions } from '@/components/client/ClientTransactions'
 
+import TransactionSummary from './components/transaction/TransactionSummary'
 import TransactionForm from '@/components/transaction/TransactionForm'
 import TransactionReview from '@/components//transaction/TransactionReview'
 import ClientDataProvider from '@/components/client/ClientProvider'
@@ -34,6 +35,10 @@ function App() {
 					<Route
 						path="/client/:slugName"
 						element={<ClientTransactions />}
+					/>
+					<Route
+						path="/client/:slugName/transaction/:transactionId"
+						element={<TransactionSummary />}
 					/>
 					<Route
 						path="/client/:slugName/transaction/add"

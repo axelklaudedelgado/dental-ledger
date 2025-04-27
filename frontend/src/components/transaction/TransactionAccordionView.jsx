@@ -407,6 +407,14 @@ export const TransactionAccordionView = ({
 													className="flex-1 h-12 text-sm font-medium"
 													onClick={(e) => {
 														e.stopPropagation()
+														const { id } =
+															transaction
+														navigate(
+															`${location.pathname}/transaction/${id}`,
+															{
+																state: transaction,
+															},
+														)
 													}}
 												>
 													<Eye className="h-5 w-5 mr-2" />
