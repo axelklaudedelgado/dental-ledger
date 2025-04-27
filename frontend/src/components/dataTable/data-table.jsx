@@ -162,7 +162,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 					<Button
 						variant="default"
 						size="sm"
-						className="ml-2 hidden h-8 lg:flex bg-action hover:bg-action-focus"
+						className="ml-2 hidden h-8 md:flex bg-action hover:bg-action-focus"
 						onClick={() =>
 							navigate(`${location.pathname}/transaction/add`)
 						}
