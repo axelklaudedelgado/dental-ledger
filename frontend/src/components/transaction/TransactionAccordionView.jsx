@@ -158,7 +158,7 @@ export const TransactionAccordionView = ({
 
 	if (status === 'failed') {
 		return (
-			<div className="text-center p-8 text-red-500">
+			<div className="text-center p-8 text-destructive">
 				Failed to load transactions data: {error}
 			</div>
 		)
@@ -166,7 +166,7 @@ export const TransactionAccordionView = ({
 
 	return (
 		<div className="pb-20">
-			<div className="sticky top-0 z-10 bg-white py-3 border-b">
+			<div className="sticky top-0 z-10 bg-background py-3 border-b">
 				<div className="flex items-center gap-3">
 					<div className="relative flex-1">
 						<Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
@@ -182,7 +182,7 @@ export const TransactionAccordionView = ({
 							navigate(`${location.pathname}/transaction/add`)
 						}
 						size="icon"
-						className="h-11 w-11"
+						className="h-11 w-11 bg-action hover:bg-action-focus"
 					>
 						<Plus className="h-5 w-5" />
 					</Button>
@@ -212,7 +212,7 @@ export const TransactionAccordionView = ({
 								<li
 									key={transaction.joNumber}
 									className={cn(
-										'border rounded-lg overflow-hidden transition-all duration-200',
+										'border rounded-lg overflow-hidden transition-all duration-200 bg-white',
 										isExpanded ? 'shadow-md' : 'shadow-sm',
 									)}
 								>
@@ -222,21 +222,6 @@ export const TransactionAccordionView = ({
 											toggleExpanded(transaction.joNumber)
 										}
 									>
-										<div
-											className={cn(
-												'w-1 h-full self-stretch',
-												paymentStatus === 'fully-paid'
-													? 'bg-green-500'
-													: paymentStatus ===
-														  'partial'
-														? 'bg-amber-500'
-														: paymentStatus ===
-															  'overpaid'
-															? 'bg-blue-500'
-															: 'bg-red-500',
-											)}
-										/>
-
 										<div className="flex-1 p-5">
 											<div className="flex justify-between items-center">
 												<h3 className="font-medium text-base">
@@ -285,11 +270,11 @@ export const TransactionAccordionView = ({
 															'ml-1 font-medium',
 															transaction.balance ===
 																0
-																? 'text-green-600'
+																? 'text-paid'
 																: transaction.balance <
 																	  0
-																	? 'text-blue-600'
-																	: 'text-red-600',
+																	? 'text-secondary'
+																	: 'text-destructive',
 														)}
 													>
 														{formatCurrency(
@@ -301,17 +286,27 @@ export const TransactionAccordionView = ({
 										</div>
 
 										<div className="pr-4 pl-2">
-											<div className="p-2.5 rounded-full hover:bg-gray-100">
-												{isExpanded ? (
-													<ChevronDown className="h-6 w-6 text-muted-foreground" />
-												) : (
-													<ChevronRight className="h-6 w-6 text-muted-foreground" />
-												)}
+											<div className="p-2.5 rounded-full hover:bg-muted">
+												<ChevronRight
+													className={cn(
+														'h-6 w-6 text-muted-foreground transition-transform duration-300',
+														isExpanded
+															? 'rotate-90'
+															: 'rotate-0',
+													)}
+												/>
 											</div>
 										</div>
 									</div>
 
-									{isExpanded && (
+									<div
+										className={cn(
+											'overflow-hidden transition-all duration-300 ease-in-out',
+											isExpanded
+												? 'max-h-screen opacity-100'
+												: 'max-h-0 opacity-0',
+										)}
+									>
 										<div className="border-t">
 											<div className="p-5 bg-muted/10">
 												<div className="space-y-6">
@@ -377,11 +372,11 @@ export const TransactionAccordionView = ({
 																'text-base font-medium',
 																transaction.balance ===
 																	0
-																	? 'text-green-600'
+																	? 'text-paid'
 																	: transaction.balance <
 																		  0
-																		? 'text-blue-600'
-																		: 'text-red-600',
+																		? 'text-secondary'
+																		: 'text-destructive',
 															)}
 														>
 															{formatCurrency(
@@ -405,7 +400,7 @@ export const TransactionAccordionView = ({
 												</div>
 											</div>
 
-											<div className="flex border-t p-2.5 bg-muted/5 mt-2">
+											<div className="flex border-t p-2.5 bg-muted/10 mt-2">
 												<Button
 													variant="ghost"
 													size="sm"
@@ -439,7 +434,7 @@ export const TransactionAccordionView = ({
 												<Button
 													variant="ghost"
 													size="sm"
-													className="flex-1 h-12 text-sm font-medium text-red-600 hover:text-red-600 hover:bg-red-100"
+													className="flex-1 h-12 text-sm font-medium text-destructive hover:text-destructive hover:bg-destructive-background"
 													onClick={(e) => {
 														e.stopPropagation()
 														openDeleteDialog(
@@ -452,7 +447,7 @@ export const TransactionAccordionView = ({
 												</Button>
 											</div>
 										</div>
-									)}
+									</div>
 								</li>
 							)
 						})}
@@ -490,7 +485,7 @@ export const TransactionAccordionView = ({
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteConfirm}
-							className="bg-red-600 hover:bg-red-700"
+							className="bg-destructive hover:bg-destructive-focus"
 						>
 							Confirm Deletion
 						</AlertDialogAction>

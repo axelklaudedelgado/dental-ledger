@@ -176,7 +176,7 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 		<div key={client.id} className="relative">
 			<Card
 				className={`overflow-hidden hover:shadow-md transition-shadow ${
-					isHighlighted ? 'bg-yellow-50 border-yellow-300' : ''
+					isHighlighted ? 'bg-yellow-50 border-partial' : ''
 				}`}
 			>
 				<CardContent
@@ -187,10 +187,10 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 							<div
 								className={`px-4 py-2 text-sm font-medium ${
 									client.status.toLowerCase() === 'unpaid'
-										? 'text-red-600 bg-red-100'
+										? 'text-destructive bg-destructive-background'
 										: client.status.toLowerCase() === 'paid'
-											? 'text-green-600 bg-green-100'
-											: 'text-blue-600 bg-blue-100'
+											? 'text-paid bg-paid-background'
+											: 'text-secondary bg-secondary-background'
 								}`}
 							>
 								{client.status.charAt(0).toUpperCase() +
@@ -280,7 +280,7 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 						<Button
 							variant="ghost"
 							size="sm"
-							className="flex-1 h-12 text-red-600 hover:text-red-600 hover:bg-red-100"
+							className="flex-1 h-12 text-destructive hover:text-destructive hover:bg-destructive-background"
 							onClick={(e) => {
 								e.stopPropagation()
 								openDeleteDialog(client)
@@ -305,7 +305,7 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 
 	if (status === 'failed') {
 		return (
-			<div className="text-center p-8 text-red-500">
+			<div className="text-center p-8 text-destructive">
 				Failed to load clients data: {error}
 			</div>
 		)
@@ -313,7 +313,7 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 
 	return (
 		<div className="pb-20">
-			<div className="sticky top-0 z-10 bg-white py-3 border-b">
+			<div className="sticky top-0 z-10 bg-background py-3 border-b">
 				<div className="flex items-center gap-3">
 					<div className="relative flex-1">
 						<Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
@@ -382,7 +382,9 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 									Reset Filters
 								</Button>
 								<DrawerClose asChild>
-									<Button>Apply Filters</Button>
+									<Button className="bg-action hover:bg-action-focus">
+										Apply Filters
+									</Button>
 								</DrawerClose>
 							</DrawerFooter>
 						</DrawerContent>
@@ -456,7 +458,7 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteClient}
-							className="bg-red-600 hover:bg-red-700"
+							className="bg-destructive hover:bg-destructive-focus"
 						>
 							Confirm Deletion
 						</AlertDialogAction>

@@ -31,21 +31,27 @@ export const ClientTransactions = () => {
 		<div>
 			<Card>
 				<CardHeader>
-					<CardTitle>Statement of Account</CardTitle>
-					<CardDescription>
+					<CardTitle className="text-xl md:text-2xl">
+						Statement of Account
+					</CardTitle>
+					<CardDescription className="text-textSecondary">
 						Account details and transaction summary
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div className="space-y-2">
-							<div className="text-sm text-gray-500">Name</div>
+							<div className="text-sm text-textSecondary">
+								Name
+							</div>
 							<div className="font-medium">
 								{selectedClient?.fullName}
 							</div>
 						</div>
 						<div className="space-y-2">
-							<div className="text-sm text-gray-500">Address</div>
+							<div className="text-sm text-textSecondary">
+								Address
+							</div>
 							<div className="font-medium">
 								{selectedClient?.address}
 							</div>
@@ -53,7 +59,7 @@ export const ClientTransactions = () => {
 					</div>
 					<Separator />
 					<div className="flex justify-between items-center">
-						<div className="text-sm text-gray-500">
+						<div className="text-sm text-textSecondary">
 							Grand Total / Remaining Balance
 						</div>
 						<div className="text-xl lg:text-2xl font-bold">
@@ -65,7 +71,7 @@ export const ClientTransactions = () => {
 					</div>
 				</CardContent>
 				<CardFooter className="flex justify-between">
-					<div className="text-sm text-gray-500">
+					<div className="text-sm text-textSecondary">
 						Last Transaction Date:{' '}
 						{selectedClient?.lastTransactionDate
 							? new Date(

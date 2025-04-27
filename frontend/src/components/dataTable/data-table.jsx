@@ -120,6 +120,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 			data-state={row.getIsSelected() && 'selected'}
 			className={clsx(
 				'cursor-pointer',
+				'hover:bg-background-hover',
 				isPinned && 'bg-yellow-100 animate-pulse',
 			)}
 			onClick={() => {
@@ -161,7 +162,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 					<Button
 						variant="default"
 						size="sm"
-						className="ml-2 hidden h-8 lg:flex"
+						className="ml-2 hidden h-8 lg:flex bg-action hover:bg-action-focus"
 						onClick={() =>
 							navigate(`${location.pathname}/transaction/add`)
 						}
@@ -173,11 +174,14 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 			</div>
 			<div className="rounded-md border">
 				<Table>
-					<TableHeader>
+					<TableHeader className="bg-muted">
 						{table.getHeaderGroups().map((headerGroup) => (
 							<TableRow key={headerGroup.id}>
 								{headerGroup.headers.map((header) => (
-									<TableHead key={header.id}>
+									<TableHead
+										key={header.id}
+										className="text-foreground"
+									>
 										{header.isPlaceholder
 											? null
 											: flexRender(
@@ -190,7 +194,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 							</TableRow>
 						))}
 					</TableHeader>
-					<TableBody>
+					<TableBody className="bg-card">
 						{isLoading ? (
 							<TableRow>
 								<TableCell
@@ -206,7 +210,7 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 							<TableRow>
 								<TableCell
 									colSpan={columns.length}
-									className="h-24 text-center text-red-500"
+									className="h-24 text-center text-destructive"
 								>
 									Failed to load clients data: {error}
 								</TableCell>

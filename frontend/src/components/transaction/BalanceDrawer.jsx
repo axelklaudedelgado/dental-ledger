@@ -61,12 +61,12 @@ export default function BalanceDrawer({
 			return {
 				text: 'Increased',
 				icon: <ArrowUp className="h-4 w-4" />,
-				color: 'text-red-600',
+				color: 'text-destructive',
 			}
 		return {
 			text: 'Decreased',
 			icon: <ArrowDown className="h-4 w-4" />,
-			color: 'text-green-600',
+			color: 'text-paid',
 		}
 	}
 
@@ -104,7 +104,7 @@ export default function BalanceDrawer({
 										Net Change
 									</h4>
 									<div
-										className={`flex items-center font-medium ${netBalanceChange > 0 ? 'text-red-600' : netBalanceChange < 0 ? 'text-green-600' : 'text-gray-600'}`}
+										className={`flex items-center font-medium ${netBalanceChange > 0 ? 'text-destructive' : netBalanceChange < 0 ? 'text-paid' : ''}`}
 									>
 										{netBalanceChange !== 0 &&
 											(netBalanceChange > 0 ? (
@@ -182,8 +182,8 @@ export default function BalanceDrawer({
 								</div>
 							</div>
 
-							<div className="border-t border-gray-200 pt-3">
-								<h4 className="font-semibold text-black mb-2">
+							<div className="border-t pt-3">
+								<h4 className="font-semibold mb-2">
 									Client's Account Summary
 								</h4>
 								<div className="space-y-2">
@@ -197,7 +197,7 @@ export default function BalanceDrawer({
 									</div>
 
 									{isOverpayment && (
-										<div className="mt-2 p-2 bg-yellow-100 rounded-md">
+										<div className="mt-2 p-2 bg-overpayment rounded-md">
 											<p className="font-medium">
 												Overpayment: ₱
 												{overpayment.toFixed(2)}

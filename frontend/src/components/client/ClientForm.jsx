@@ -225,16 +225,19 @@ export function ClientForm({
 
 	const defaultTrigger = () => {
 		return isMobile ? (
-			<Button size="icon" className="h-11 w-11">
-				<Plus className="h-5 w-5" />
+			<Button
+				size="icon"
+				className="h-11 w-11 bg-action hover:bg-action-focus"
+			>
+				<Plus className="h-5 w-5 text-white" />
 			</Button>
 		) : (
 			<Button
 				variant="default"
 				size="sm"
-				className="ml-2 hidden h-8 lg:flex"
+				className="ml-2 hidden h-8 lg:flex bg-action hover:bg-action-focus"
 			>
-				<Plus className="h-4 w-4" />
+				<Plus className="h-4 w-4 text-white" />
 				Add Client
 			</Button>
 		)
@@ -532,6 +535,7 @@ export function ClientForm({
 							<Button
 								type="submit"
 								disabled={showAlert && !acknowledgeChecked}
+								className="bg-action hover:bg-action-focus"
 							>
 								{initialData ? 'Update Client' : 'Add Client'}
 							</Button>

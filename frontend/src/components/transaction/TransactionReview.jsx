@@ -214,7 +214,7 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 				<strong>Balance:</strong> ₱{transaction.balance.toFixed(2)}
 			</div>
 			{transaction.remarks && (
-				<div className="bg-gray-100 p-4 rounded-md">
+				<div className="bg-muted/50 p-4 rounded-md">
 					<strong>Remarks:</strong>
 					<p className="mt-1 whitespace-pre-wrap">
 						{transaction.remarks}
@@ -222,7 +222,7 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 				</div>
 			)}
 			<div
-				className={`p-4 border rounded-lg ${isOverpayment ? 'bg-yellow-50' : 'bg-blue-50'}`}
+				className={`p-4 border rounded-lg ${isOverpayment ? 'bg-partial-background' : 'bg-secondary-background'}`}
 			>
 				<h4 className="font-semibold mb-2">Client's Account Summary</h4>
 				<p>
@@ -282,12 +282,12 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 							{error && (
 								<Alert className="mb-6 bg-red-50 border-red-200">
 									<div className="flex items-start gap-4">
-										<AlertCircle className="h-6 w-6 text-red-500 mt-1" />
+										<AlertCircle className="h-6 w-6 text-destructive mt-1" />
 										<div>
-											<AlertTitle className="text-lg font-semibold text-red-800">
+											<AlertTitle className="text-lg font-semibold text-destructive-focus">
 												Error
 											</AlertTitle>
-											<AlertDescription className="text-red-700">
+											<AlertDescription className="text-destructive">
 												{error}
 											</AlertDescription>
 										</div>
@@ -333,12 +333,12 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 								{error && (
 									<Alert className="mb-6 bg-red-50 border-red-200">
 										<div className="flex items-start gap-4">
-											<AlertCircle className="h-6 w-6 text-red-500 mt-1" />
+											<AlertCircle className="h-6 w-6 text-destructive mt-1" />
 											<div>
-												<AlertTitle className="text-lg font-semibold text-red-800">
+												<AlertTitle className="text-lg font-semibold text-destructive-focus">
 													Error
 												</AlertTitle>
-												<AlertDescription className="text-red-700">
+												<AlertDescription className="text-destructive-700">
 													{error}
 												</AlertDescription>
 											</div>
@@ -383,7 +383,7 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 						</Button>
 						<Button
 							onClick={() => window.print()}
-							className="w-full h-14 font-medium text-base md:w-auto md:h-10"
+							className="w-full h-14 font-medium text-base md:w-auto md:h-10 bg-action hover:bg-action-focus"
 						>
 							Print Summary
 						</Button>
@@ -401,7 +401,7 @@ const TransactionReview = ({ isUpdateMode = false }) => {
 						<Button
 							onClick={onSubmit}
 							disabled={isLoading}
-							className="w-full h-14 font-medium text-base md:w-auto md:h-10"
+							className="w-full h-14 font-medium text-base md:w-auto md:h-10 bg-action hover:bg-action-focus"
 						>
 							{isLoading
 								? isUpdateMode

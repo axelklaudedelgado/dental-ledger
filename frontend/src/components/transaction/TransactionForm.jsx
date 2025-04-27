@@ -816,8 +816,8 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 											className={cn(
 												'text-xs h-10 w-10 px-2',
 												editingField === 'date'
-													? 'text-green-600'
-													: 'text-blue-600',
+													? 'text-paid'
+													: 'text-edit hover:text-secondary hover:bg-secondary-background',
 											)}
 										>
 											{editingField === 'date'
@@ -840,7 +840,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 											className={cn(
 												'h-12 text-base pr-12 border-2',
 												form.formState.errors.date
-													? 'border-red-500 focus:border-red-500'
+													? 'border-destructive focus:border-destructive'
 													: 'focus:border-primary',
 											)}
 											disabled={
@@ -875,7 +875,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 										</Button>
 									</div>
 									{!form.formState.errors.date && (
-										<p className="text-gray-500 text-xs mt-1">
+										<p className="text-muted-foreground text-xs mt-1">
 											Format: MM/DD/YYYY (e.g.,
 											01/15/2023)
 										</p>
@@ -883,7 +883,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 									{form.formState.errors.date && (
 										<p
 											id="date-error"
-											className="text-red-500 text-sm mt-1"
+											className="text-destructive text-sm mt-1"
 										>
 											{form.formState.errors.date.message}
 										</p>
@@ -1023,7 +1023,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 																	className={cn(
 																		'h-14 w-14 flex items-center justify-center rounded-md',
 																		isSelected &&
-																			'bg-black text-white',
+																			'bg-action hover:bg-action-focus text-white',
 																		isToday &&
 																			!isSelected &&
 																			'border border-primary',
@@ -1111,7 +1111,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 														{particular.type ===
 															'Service' &&
 															particular.name && (
-																<span className="text-sm text-gray-600 mr-2 flex-shrink-0">
+																<span className="text-sm text-muted-foreground mr-2 flex-shrink-0">
 																	{
 																		particular.units
 																	}{' '}
@@ -1125,7 +1125,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 															)}
 														{particular.type ===
 															'Payment' && (
-															<span className="text-sm text-gray-600 mr-2 flex-shrink-0">
+															<span className="text-sm text-muted-foreground mr-2 flex-shrink-0">
 																₱
 																{Number(
 																	particular.unitPrice,
@@ -1593,8 +1593,8 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 																		'w-full h-14',
 																		editingField ===
 																			`particular-${index}`
-																			? 'text-green-600 hover:text-green-800 hover:bg-green-50'
-																			: 'text-blue-600 hover:text-blue-800 hover:bg-blue-50',
+																			? 'text-paid hover:text-paid hover:bg-paid-background'
+																			: 'text-edit hover:text-secondary hover:bg-secondary-background',
 																	)}
 																>
 																	{editingField ===
@@ -1625,7 +1625,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 																				index,
 																			)
 																		}
-																		className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 h-14"
+																		className="w-full text-destructive hover:text-destructive-focus hover:bg-destructive-background h-14"
 																	>
 																		<X className="mr-2 h-5 w-5" />{' '}
 																		Remove
@@ -1690,7 +1690,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 							</div>
 
 							<div
-								className={`p-4 border rounded-lg ${isOverpayment ? 'bg-yellow-50' : 'bg-blue-50'} mb-4`}
+								className={`p-4 border rounded-lg ${isOverpayment ? 'bg-partial-background' : 'bg-secondary-background'} mb-4`}
 							>
 								<div className="space-y-2">
 									<div className="flex justify-between items-center">
@@ -1711,12 +1711,12 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 														(originalTransaction.amount -
 															originalTransaction.payment) >
 													0
-														? 'text-red-600'
+														? 'text-destructive'
 														: balance -
 																	(originalTransaction.amount -
 																		originalTransaction.payment) <
 															  0
-															? 'text-green-600'
+															? 'text-paid'
 															: ''
 												}`}
 											>
@@ -1758,7 +1758,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 										</span>
 									</div>
 
-									<div className="flex justify-between items-center border-t border-gray-200 pt-2 mt-1 font-medium">
+									<div className="flex justify-between items-center border-t border-gray-300 pt-2 mt-1 font-medium">
 										<span>
 											Projected Balance (
 											{isUpdateMode
@@ -1811,7 +1811,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 
 						<Button
 							type="submit"
-							className="w-full h-14 text-base mt-6"
+							className="w-full h-14 text-base mt-6 bg-action hover:bg-action-focus"
 						>
 							{isUpdateMode
 								? 'Update Transaction'
@@ -2261,9 +2261,9 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 									balance < 0 &&
 										selectedClient?.totalBalance >=
 											Math.abs(balance)
-										? 'border-yellow-500'
+										? 'border-partial'
 										: balance < 0
-											? 'border-red-500'
+											? 'border-destructive'
 											: '',
 								)}
 							/>

@@ -45,12 +45,12 @@ const BalanceInfo = ({
 			return {
 				text: 'Increased',
 				icon: <ArrowUp className="h-4 w-4" />,
-				color: 'text-red-600',
+				color: 'text-destructive',
 			}
 		return {
 			text: 'Decreased',
 			icon: <ArrowDown className="h-4 w-4" />,
-			color: 'text-green-600',
+			color: 'text-paid',
 		}
 	}
 
@@ -64,7 +64,7 @@ const BalanceInfo = ({
 	return (
 		<div className="mt-2 space-y-2 text-sm">
 			<div
-				className={`p-4 border rounded-lg ${isOverpayment ? 'bg-yellow-50' : 'bg-blue-50'}`}
+				className={`p-4 border rounded-lg ${isOverpayment ? 'bg-partial-background' : 'bg-secondary-background'}`}
 			>
 				<div className="flex justify-between items-center mb-2">
 					<h4 className="font-semibold">Balance Summary</h4>
@@ -94,9 +94,9 @@ const BalanceInfo = ({
 						<span
 							className={`font-medium flex items-center ${
 								netBalanceChange > 0
-									? 'text-red-600'
+									? 'text-destructive'
 									: netBalanceChange < 0
-										? 'text-green-600'
+										? 'text-paid'
 										: ''
 							}`}
 						>
@@ -124,7 +124,7 @@ const BalanceInfo = ({
 						<span>₱{selectedClient?.totalBalance.toFixed(2)}</span>
 					</div>
 
-					<div className="flex justify-between border-t border-gray-200 pt-2 mt-1 font-medium">
+					<div className="flex justify-between border-t border-gray-300 pt-2 mt-1 font-medium">
 						<span>Projected Balance:</span>
 						<span>₱{projectedClientBalance.toFixed(2)}</span>
 					</div>
@@ -132,7 +132,7 @@ const BalanceInfo = ({
 
 				{expanded && (
 					<>
-						<div className="border-t border-gray-300 my-3"></div>
+						<div className="border-t border-gray-400 my-3"></div>
 
 						<div className="space-y-3">
 							<h5 className="font-medium">Detailed Breakdown</h5>
@@ -168,7 +168,7 @@ const BalanceInfo = ({
 							</div>
 
 							{isOverpayment && (
-								<div className="mt-2 p-2 bg-yellow-100 rounded-md">
+								<div className="mt-2 p-2 bg-overpayment border-l-4 border-yellow-500 rounded-md">
 									<p className="font-medium">
 										Overpayment: ₱{overpayment.toFixed(2)}
 									</p>
