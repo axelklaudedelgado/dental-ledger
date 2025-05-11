@@ -455,10 +455,12 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel className="h-12">
+							Cancel
+						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteClient}
-							className="bg-destructive hover:bg-destructive-focus"
+							className="bg-destructive hover:bg-destructive-focus h-12"
 						>
 							Confirm Deletion
 						</AlertDialogAction>

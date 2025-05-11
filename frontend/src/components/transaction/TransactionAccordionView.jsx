@@ -490,10 +490,12 @@ export const TransactionAccordionView = ({
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel className="h-12">
+							Cancel
+						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteConfirm}
-							className="bg-destructive hover:bg-destructive-focus"
+							className="bg-destructive hover:bg-destructive-focus h-12"
 						>
 							Confirm Deletion
 						</AlertDialogAction>
