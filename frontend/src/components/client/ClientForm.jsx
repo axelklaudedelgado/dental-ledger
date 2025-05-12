@@ -26,7 +26,8 @@ import { Input } from '../ui/input'
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group'
 import { Checkbox } from '../ui/checkbox'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
-import { Pencil } from 'lucide-react'
+import { Pencil, X } from 'lucide-react'
+import { useMediaQuery } from '../ui/hooks/useMediaQuery'
 
 import { useDispatch } from 'react-redux'
 import {
@@ -42,7 +43,10 @@ const schema = yup.object().shape({
 		.required('Title is required'),
 	firstName: yup.string().required('First name is required'),
 	lastName: yup.string().required('Last name is required'),
-	address: yup.string().required('Address is required'),
+	address: yup
+		.string()
+		.required('Address is required')
+		.max(255, 'Address must be less than 255 characters'),
 })
 
 export function ClientForm({
@@ -60,6 +64,7 @@ export function ClientForm({
 	const [showAlert, setShowAlert] = useState(false)
 	const [editingField, setEditingField] = useState(null)
 	const { toast } = useToast()
+	const isSmallScreen = useMediaQuery('(max-width: 405px)')
 
 	const firstNameRef = useRef(null)
 	const lastNameRef = useRef(null)
@@ -243,305 +248,356 @@ export function ClientForm({
 		)
 	}
 
+	const contentScrollable = showAlert && isSmallScreen
+
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			{!isUpdateMode && (
 				<DialogTrigger asChild>{defaultTrigger()}</DialogTrigger>
 			)}
-			<DialogContent className="sm:max-w-[425px]">
-				<DialogHeader>
-					<DialogTitle>
-						{initialData ? 'Edit Client' : 'Add Client'}
-					</DialogTitle>
-					<DialogDescription className="pt-2">
+			<DialogContent className="p-0 w-full sm:max-w-[425px] max-h-[90vh] flex flex-col overflow-hidden">
+				<DialogHeader className="bg-white px-4 py-3 sm:px-6 sm:py-4 border-b sticky top-0 z-10">
+					<div className="flex items-center justify-between">
+						<DialogTitle className="text-lg">
+							{initialData ? 'Edit Client' : 'Add Client'}
+						</DialogTitle>
+					</div>
+					<DialogDescription className="pt-1 text-sm">
 						{initialData
 							? "Edit the client's information below to update them in your list."
 							: "Enter the client's information below to add them to your list."}
 					</DialogDescription>
 				</DialogHeader>
-				<Form {...form}>
-					<form
-						onSubmit={form.handleSubmit(onSubmit)}
-						className="space-y-4"
-					>
-						{showAlert && (
-							<Alert className="mb-4 border-yellow-500 bg-yellow-50 text-yellow-900">
-								<AlertTitle className="text-lg font-semibold">
-									Warning: Duplicate Client
-								</AlertTitle>
-								<AlertDescription className="mt-2">
-									<p>
-										A client with the name{' '}
-										<strong>
-											{form.getValues('firstName')}{' '}
-											{form.getValues('lastName')}
-										</strong>{' '}
-										already exists.
-									</p>
-								</AlertDescription>
-							</Alert>
-						)}
-						<FormField
-							control={form.control}
-							name="title"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Title</FormLabel>
-									<FormControl>
-										<div className="flex items-center space-x-2">
-											<RadioGroup
-												onValueChange={(value) => {
-													field.onChange(value)
-													handleFieldChange()
-												}}
-												defaultValue={field.value}
-												className="flex space-x-4"
-												disabled={
-													initialData &&
-													!(editingField === 'title')
-												}
-											>
-												<FormItem className="flex items-center space-x-2">
-													<FormControl>
-														<RadioGroupItem value="Dr." />
-													</FormControl>
-													<FormLabel className="font-normal">
-														Dr.
-													</FormLabel>
-												</FormItem>
-												<FormItem className="flex items-center space-x-2">
-													<FormControl>
-														<RadioGroupItem value="Dra." />
-													</FormControl>
-													<FormLabel className="font-normal">
-														Dra.
-													</FormLabel>
-												</FormItem>
-												<FormItem className="flex items-center space-x-2">
-													<FormControl>
-														<RadioGroupItem value="none" />
-													</FormControl>
-													<FormLabel className="font-normal">
-														None
-													</FormLabel>
-												</FormItem>
-											</RadioGroup>
-											{initialData && (
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon"
-													onClick={() =>
-														setEditingField(
-															editingField ===
-																'title'
-																? null
-																: 'title',
-														)
-													}
-												>
-													<Pencil className="h-4 w-4" />
-												</Button>
-											)}
-										</div>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="firstName"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>First Name</FormLabel>
-									<FormControl>
-										<div className="relative">
-											<Input
-												{...field}
-												disabled={
-													initialData &&
-													!(
-														editingField ===
-														'firstName'
-													)
-												}
-												onKeyPress={(e) =>
-													handleKeyPress(
-														e,
+
+				<div
+					className={`px-4 py-3 sm:px-6 flex-grow ${contentScrollable ? 'overflow-y-auto' : ''}`}
+				>
+					<Form {...form}>
+						<form
+							onSubmit={form.handleSubmit(onSubmit)}
+							className="space-y-4"
+						>
+							{showAlert && (
+								<div className="space-y-3">
+									<Alert className="border-yellow-500 bg-yellow-50 text-yellow-900 relative">
+										<AlertTitle className="text-base font-semibold">
+											Warning: Duplicate Client
+										</AlertTitle>
+										<AlertDescription className="mt-1 text-sm">
+											<p>
+												A client with the name{' '}
+												<strong>
+													{form.getValues(
 														'firstName',
-													)
-												}
-												onFocus={() =>
-													handleFieldFocus(field)
-												}
-												onChange={(e) => {
-													field.onChange(e)
-													handleFieldChange()
-												}}
-												ref={firstNameRef}
-											/>
-											{initialData && (
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon"
-													className="absolute right-2 top-1/2 -translate-y-1/2"
-													onClick={() =>
-														setEditingField(
+													)}{' '}
+													{form.getValues('lastName')}
+												</strong>{' '}
+												already exists.
+											</p>
+										</AlertDescription>
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											className="absolute top-2 right-2 h-6 w-6 rounded-full"
+											onClick={() => setShowAlert(false)}
+										>
+											<X className="h-3 w-3" />
+											<span className="sr-only">
+												Close warning
+											</span>
+										</Button>
+									</Alert>
+									<div className="flex items-center space-x-3">
+										<Checkbox
+											id="acknowledge"
+											checked={acknowledgeChecked}
+											onCheckedChange={
+												setAcknowledgeChecked
+											}
+											className="h-5 w-5 border-2"
+										/>
+										<label
+											htmlFor="acknowledge"
+											className="text-sm font-medium leading-none cursor-pointer"
+										>
+											{initialData
+												? 'Confirm duplicate client update'
+												: 'Confirm adding duplicate client'}
+										</label>
+									</div>
+								</div>
+							)}
+							<FormField
+								control={form.control}
+								name="title"
+								render={({ field }) => (
+									<FormItem className="space-y-2">
+										<FormLabel>Title</FormLabel>
+										<FormControl>
+											<div className="flex items-center space-x-2">
+												<RadioGroup
+													onValueChange={(value) => {
+														field.onChange(value)
+														handleFieldChange()
+													}}
+													defaultValue={field.value}
+													className="flex flex-wrap gap-6"
+													disabled={
+														initialData &&
+														!(
 															editingField ===
-																'firstName'
-																? null
-																: 'firstName',
+															'title'
 														)
 													}
 												>
-													<Pencil className="h-4 w-4" />
-												</Button>
-											)}
-										</div>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="lastName"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Last Name</FormLabel>
-									<FormControl>
-										<div className="relative">
-											<Input
-												{...field}
-												disabled={
-													initialData &&
-													!(
-														editingField ===
-														'lastName'
-													)
-												}
-												onKeyPress={(e) =>
-													handleKeyPress(
-														e,
-														'lastName',
-													)
-												}
-												onFocus={() =>
-													handleFieldFocus(field)
-												}
-												onChange={(e) => {
-													field.onChange(e)
-													handleFieldChange()
-												}}
-												ref={lastNameRef}
-											/>
-											{initialData && (
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon"
-													className="absolute right-2 top-1/2 -translate-y-1/2"
-													onClick={() =>
-														setEditingField(
+													<FormItem className="flex items-center space-x-3">
+														<FormControl>
+															<RadioGroupItem
+																value="Dr."
+																className="h-5 w-5"
+															/>
+														</FormControl>
+														<FormLabel className="font-normal cursor-pointer">
+															Dr.
+														</FormLabel>
+													</FormItem>
+													<FormItem className="flex items-center space-x-3">
+														<FormControl>
+															<RadioGroupItem
+																value="Dra."
+																className="h-5 w-5"
+															/>
+														</FormControl>
+														<FormLabel className="font-normal cursor-pointer">
+															Dra.
+														</FormLabel>
+													</FormItem>
+													<FormItem className="flex items-center space-x-3">
+														<FormControl>
+															<RadioGroupItem
+																value="none"
+																className="h-5 w-5"
+															/>
+														</FormControl>
+														<FormLabel className="font-normal cursor-pointer">
+															None
+														</FormLabel>
+													</FormItem>
+												</RadioGroup>
+												{initialData && (
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="h-10 w-10 ml-auto"
+														onClick={() =>
+															setEditingField(
+																editingField ===
+																	'title'
+																	? null
+																	: 'title',
+															)
+														}
+													>
+														<Pencil className="h-4 w-4" />
+													</Button>
+												)}
+											</div>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="firstName"
+								render={({ field }) => (
+									<FormItem className="space-y-2">
+										<FormLabel>First Name</FormLabel>
+										<FormControl>
+											<div className="relative">
+												<Input
+													{...field}
+													disabled={
+														initialData &&
+														!(
 															editingField ===
-																'lastName'
-																? null
-																: 'lastName',
+															'firstName'
 														)
 													}
-												>
-													<Pencil className="h-4 w-4" />
-												</Button>
-											)}
-										</div>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						<FormField
-							control={form.control}
-							name="address"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Address</FormLabel>
-									<FormControl>
-										<div className="relative">
-											<Input
-												{...field}
-												onFocus={() =>
-													handleFieldFocus(field)
-												}
-												disabled={
-													initialData &&
-													!(
-														editingField ===
-														'address'
-													)
-												}
-												ref={addressRef}
-											/>
-											{initialData && (
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon"
-													className="absolute right-2 top-1/2 -translate-y-1/2"
-													onClick={() =>
-														setEditingField(
-															editingField ===
-																'address'
-																? null
-																: 'address',
+													onKeyPress={(e) =>
+														handleKeyPress(
+															e,
+															'firstName',
 														)
 													}
-												>
-													<Pencil className="h-4 w-4" />
-												</Button>
-											)}
+													onFocus={() =>
+														handleFieldFocus(field)
+													}
+													onChange={(e) => {
+														field.onChange(e)
+														handleFieldChange()
+													}}
+													ref={firstNameRef}
+													className="h-12"
+												/>
+												{initialData && (
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10"
+														onClick={() =>
+															setEditingField(
+																editingField ===
+																	'firstName'
+																	? null
+																	: 'firstName',
+															)
+														}
+													>
+														<Pencil className="h-4 w-4" />
+													</Button>
+												)}
+											</div>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="lastName"
+								render={({ field }) => (
+									<FormItem className="space-y-2">
+										<FormLabel>Last Name</FormLabel>
+										<FormControl>
+											<div className="relative">
+												<Input
+													{...field}
+													disabled={
+														initialData &&
+														!(
+															editingField ===
+															'lastName'
+														)
+													}
+													onKeyPress={(e) =>
+														handleKeyPress(
+															e,
+															'lastName',
+														)
+													}
+													onFocus={() =>
+														handleFieldFocus(field)
+													}
+													onChange={(e) => {
+														field.onChange(e)
+														handleFieldChange()
+													}}
+													ref={lastNameRef}
+													className="h-12"
+												/>
+												{initialData && (
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10"
+														onClick={() =>
+															setEditingField(
+																editingField ===
+																	'lastName'
+																	? null
+																	: 'lastName',
+															)
+														}
+													>
+														<Pencil className="h-4 w-4" />
+													</Button>
+												)}
+											</div>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="address"
+								render={({ field }) => (
+									<FormItem className="space-y-2">
+										<FormLabel>Address</FormLabel>
+										<FormControl>
+											<div className="relative">
+												<Input
+													{...field}
+													onFocus={() =>
+														handleFieldFocus(field)
+													}
+													disabled={
+														initialData &&
+														!(
+															editingField ===
+															'address'
+														)
+													}
+													ref={addressRef}
+													className="h-12"
+													maxLength={255}
+												/>
+												{initialData && (
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10"
+														onClick={() =>
+															setEditingField(
+																editingField ===
+																	'address'
+																	? null
+																	: 'address',
+															)
+														}
+													>
+														<Pencil className="h-4 w-4" />
+													</Button>
+												)}
+											</div>
+										</FormControl>
+										<div className="text-xs text-right text-gray-500">
+											{field.value.length} / 255
 										</div>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-						{showAlert && (
-							<div className="flex items-center space-x-2 mb-4">
-								<Checkbox
-									id="acknowledge"
-									checked={acknowledgeChecked}
-									onCheckedChange={setAcknowledgeChecked}
-								/>
-								<label
-									htmlFor="acknowledge"
-									className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-								>
-									{initialData
-										? 'Confirm duplicate client update'
-										: 'Confirm adding duplicate client'}
-								</label>
-							</div>
-						)}
-						<DialogFooter>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => handleOpenChange(false)}
-							>
-								Cancel
-							</Button>
-							<Button
-								type="submit"
-								disabled={showAlert && !acknowledgeChecked}
-								className="bg-action hover:bg-action-focus"
-							>
-								{initialData ? 'Update Client' : 'Add Client'}
-							</Button>
-						</DialogFooter>
-					</form>
-				</Form>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</form>
+					</Form>
+				</div>
+
+				<DialogFooter className="bg-white px-4 py-3 sm:px-6 border-t sticky bottom-0 z-10">
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => handleOpenChange(false)}
+							className="h-12"
+						>
+							Cancel
+						</Button>
+						<Button
+							type="submit"
+							disabled={showAlert && !acknowledgeChecked}
+							className="bg-action hover:bg-action-focus h-12"
+							onClick={form.handleSubmit(onSubmit)}
+						>
+							{initialData ? 'Update Client' : 'Add Client'}
+						</Button>
+					</div>
+				</DialogFooter>
 			</DialogContent>
 		</Dialog>
 	)
