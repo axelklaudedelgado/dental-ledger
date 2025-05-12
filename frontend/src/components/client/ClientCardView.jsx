@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -50,11 +50,11 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 	const [isEditFormOpen, setIsEditFormOpen] = useState(false)
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 	const [clientToDelete, setClientToDelete] = useState(null)
+	const [isLoadingMore, setIsLoadingMore] = useState(false)
 	const loaderRef = useRef(null)
 	const { toast } = useToast()
 	const dispatch = useDispatch()
 
-	// Function to truncate text with ellipsis
 	const truncateText = (text, lines = 2) => {
 		return {
 			overflow: 'hidden',
@@ -94,6 +94,11 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 		})
 
 	const clientsToDisplay = sortedClients.slice(0, displayCount)
+	const hasMoreToLoad = clientsToDisplay.length < sortedClients.length
+
+	useEffect(() => {
+		setDisplayCount(10)
+	}, [searchTerm, statusFilters])
 
 	useEffect(() => {
 		if (highlightedClientId) {
@@ -104,29 +109,38 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 		}
 	}, [highlightedClientId])
 
+	const loadMoreItems = useCallback(() => {
+		if (hasMoreToLoad && !isLoadingMore) {
+			setIsLoadingMore(true)
+
+			setTimeout(() => {
+				setDisplayCount((prevCount) => prevCount + 10)
+				setIsLoadingMore(false)
+			}, 500)
+		}
+	}, [hasMoreToLoad, isLoadingMore])
+
 	useEffect(() => {
+		if (!loaderRef.current || !hasMoreToLoad) return
+
 		const observer = new IntersectionObserver(
 			(entries) => {
-				if (
-					entries[0].isIntersecting &&
-					clientsToDisplay.length < sortedClients.length
-				) {
-					setDisplayCount((prevCount) => prevCount + 10)
+				const [entry] = entries
+				if (entry.isIntersecting) {
+					loadMoreItems()
 				}
 			},
-			{ threshold: 0.1 },
+			{ rootMargin: '100px' },
 		)
 
-		if (loaderRef.current) {
-			observer.observe(loaderRef.current)
-		}
+		observer.observe(loaderRef.current)
 
 		return () => {
 			if (loaderRef.current) {
 				observer.unobserve(loaderRef.current)
 			}
 		}
-	}, [clientsToDisplay.length, sortedClients.length])
+	}, [loadMoreItems, hasMoreToLoad])
 
 	const toggleStatusFilter = (status) => {
 		setStatusFilters((prev) =>
@@ -423,12 +437,18 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 							renderClientCard(client),
 						)}
 
-						{clientsToDisplay.length < sortedClients.length && (
+						{hasMoreToLoad && (
 							<div
 								ref={loaderRef}
 								className="flex justify-center p-6 mt-2"
 							>
-								<Spinner size="small">Loading more...</Spinner>
+								{isLoadingMore ? (
+									<Spinner size="small">
+										Loading more...
+									</Spinner>
+								) : (
+									<div className="h-8" />
+								)}
 							</div>
 						)}
 					</div>

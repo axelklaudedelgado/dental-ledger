@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
 	Search,
@@ -38,6 +38,7 @@ export const TransactionAccordionView = ({
 	const [displayCount, setDisplayCount] = useState(10)
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 	const [transactionToDelete, setTransactionToDelete] = useState(null)
+	const [isLoadingMore, setIsLoadingMore] = useState(false)
 	const navigate = useNavigate()
 	const dispatch = useDispatch()
 	const { toast } = useToast()
@@ -77,6 +78,22 @@ export const TransactionAccordionView = ({
 	})
 
 	const transactionsToDisplay = sortedTransactions.slice(0, displayCount)
+	const hasMoreToLoad = transactionsToDisplay.length < sortedTransactions.length
+
+	useEffect(() => {
+		setDisplayCount(10)
+	}, [searchTerm])
+
+	const loadMoreItems = useCallback(() => {
+		if (hasMoreToLoad && !isLoadingMore) {
+			setIsLoadingMore(true)
+
+			setTimeout(() => {
+				setDisplayCount((prevCount) => prevCount + 10)
+				setIsLoadingMore(false)
+			}, 500)
+		}
+	}, [hasMoreToLoad, isLoadingMore])
 
 	const formatCurrency = (amount) => {
 		return new Intl.NumberFormat('en-PH', {
@@ -107,28 +124,26 @@ export const TransactionAccordionView = ({
 	}
 
 	useEffect(() => {
+		if (!loaderRef.current || !hasMoreToLoad) return
+
 		const observer = new IntersectionObserver(
 			(entries) => {
-				if (
-					entries[0].isIntersecting &&
-					transactionsToDisplay.length < sortedTransactions.length
-				) {
-					setDisplayCount((prevCount) => prevCount + 10)
+				const [entry] = entries
+				if (entry.isIntersecting) {
+					loadMoreItems()
 				}
 			},
-			{ threshold: 0.1 },
+			{ rootMargin: '100px' },
 		)
 
-		if (loaderRef.current) {
-			observer.observe(loaderRef.current)
-		}
+		observer.observe(loaderRef.current)
 
 		return () => {
 			if (loaderRef.current) {
 				observer.unobserve(loaderRef.current)
 			}
 		}
-	}, [transactionsToDisplay.length, sortedTransactions.length])
+	}, [loadMoreItems, hasMoreToLoad])
 
 	const openDeleteDialog = (transaction) => {
 		setTransactionToDelete(transaction)
@@ -460,13 +475,18 @@ export const TransactionAccordionView = ({
 							)
 						})}
 
-						{transactionsToDisplay.length <
-							sortedTransactions.length && (
+						{hasMoreToLoad && (
 							<div
 								ref={loaderRef}
 								className="flex justify-center p-6 mt-2"
 							>
-								<Spinner size="small">Loading more...</Spinner>
+								{isLoadingMore ? (
+									<Spinner size="small">
+										Loading more...
+									</Spinner>
+								) : (
+									<div className="h-8" />
+								)}
 							</div>
 						)}
 					</ul>
