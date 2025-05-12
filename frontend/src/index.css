@@ -95,6 +95,11 @@
 			'rlig' 1,
 			'calt' 1;
 	}
+
+	[class*='toast'],
+	[class*='toast'] * {
+		color: inherit;
+	}
 }
 
 :root {
