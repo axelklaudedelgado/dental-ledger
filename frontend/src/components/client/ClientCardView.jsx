@@ -354,13 +354,13 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 							<DrawerHeader>
 								<DrawerTitle>Filter Clients</DrawerTitle>
 							</DrawerHeader>
-							<div className="px-4 py-2">
+							<div className="px-4 pb-3">
 								<div className="space-y-4">
 									<div>
 										<h3 className="text-sm font-medium mb-3">
 											Status
 										</h3>
-										<div className="space-y-2">
+										<div className="space-y-3">
 											{uniqueStatuses.map((status) => (
 												<div
 													key={status}
@@ -371,6 +371,7 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 														checked={statusFilters.includes(
 															status.toLowerCase(),
 														)}
+														className="h-5 w-5"
 														onCheckedChange={() =>
 															toggleStatusFilter(
 																status.toLowerCase(),
@@ -392,12 +393,13 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 							<DrawerFooter className="pt-2">
 								<Button
 									variant="outline"
+									className="h-12 w-full"
 									onClick={() => setStatusFilters([])}
 								>
 									Reset Filters
 								</Button>
 								<DrawerClose asChild>
-									<Button className="bg-action hover:bg-action-focus">
+									<Button className="bg-action hover:bg-action-focus h-12 w-full">
 										Apply Filters
 									</Button>
 								</DrawerClose>
