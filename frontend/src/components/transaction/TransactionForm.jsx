@@ -200,7 +200,10 @@ const createSchema = (selectedClient) => {
 				}),
 			)
 			.min(1, 'At least one particular is required'),
-		remarks: yup.string().optional(),
+		remarks: yup
+			.string()
+			.optional()
+			.max(255, 'Remarks cannot exceed 255 characters'),
 	})
 }
 
@@ -1801,8 +1804,12 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 													isUpdateMode &&
 													editingField !== 'remarks'
 												}
+												maxLength={255}
 											/>
 										</FormControl>
+										<div className="text-xs text-right text-gray-500">
+											{field.value.length} / 255
+										</div>
 										<FormMessage />
 									</FormItem>
 								)}
@@ -2297,6 +2304,7 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 											editingField !== 'remarks'
 										}
 										ref={remarksRef}
+										maxLength={255}
 									/>
 									{isUpdateMode && (
 										<Button
@@ -2317,6 +2325,9 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 									)}
 								</div>
 							</FormControl>
+							<div className="text-xs text-right text-gray-500">
+								{field.value.length} / 255
+							</div>
 							<FormMessage />
 						</FormItem>
 					)}
