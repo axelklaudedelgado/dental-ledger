@@ -137,7 +137,12 @@ export function DataTable({ columns, data, isLoading, error, type = null }) {
 		>
 			{row.getVisibleCells().map((cell) => (
 				<TableCell key={cell.id}>
-					{['address', 'fullName'].includes(cell.column.id) ? (
+					{['remarks'].includes(cell.column.id) ? (
+						<OverflowTooltip
+							text={cell.getValue()}
+							maxWidth={150}
+						/>
+					) : ['address', 'fullName'].includes(cell.column.id) ? (
 						<OverflowTooltip text={cell.getValue()} />
 					) : (
 						flexRender(
