@@ -30,6 +30,7 @@ import {
 import { useDispatch } from 'react-redux'
 import { deleteClient } from '../../reducers/clientSlice'
 import { useToast } from '../ui/hooks/use-toast'
+import { BackToTop } from '../BackToTop'
 
 const removeTitles = (name) => {
 	if (!name) return ''
@@ -454,6 +455,8 @@ export const ClientsCardView = ({ data, status, error, onDeleteClient }) => {
 					</div>
 				)}
 			</div>
+
+			<BackToTop />
 
 			<AlertDialog
 				open={deleteDialogOpen}

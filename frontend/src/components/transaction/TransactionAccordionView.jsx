@@ -27,6 +27,7 @@ import {
 import { useDispatch } from 'react-redux'
 import { deleteTransaction } from '@/reducers/clientSlice'
 import { useToast } from '../ui/hooks/use-toast'
+import { BackToTop } from '../BackToTop'
 
 export const TransactionAccordionView = ({
 	transactions = [],
@@ -78,7 +79,8 @@ export const TransactionAccordionView = ({
 	})
 
 	const transactionsToDisplay = sortedTransactions.slice(0, displayCount)
-	const hasMoreToLoad = transactionsToDisplay.length < sortedTransactions.length
+	const hasMoreToLoad =
+		transactionsToDisplay.length < sortedTransactions.length
 
 	useEffect(() => {
 		setDisplayCount(10)
@@ -492,6 +494,8 @@ export const TransactionAccordionView = ({
 					</ul>
 				)}
 			</div>
+
+			<BackToTop />
 
 			<AlertDialog
 				open={deleteDialogOpen}
