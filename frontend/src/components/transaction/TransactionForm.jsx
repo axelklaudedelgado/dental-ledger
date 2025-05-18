@@ -1893,11 +1893,9 @@ const TransactionForm = ({ isUpdateMode = false }) => {
 													initialFocus
 													classNames={{
 														day_selected:
-															'bg-zinc-900 text-white hover:bg-zinc-900 hover:text-white focus:bg-zinc-900 focus:text-white',
+															'bg-accent text-white hover:bg-accent hover:text-white focus:bg-accent focus:text-white',
 														day_disabled:
 															'text-muted-foreground opacity-50 hover:bg-transparent hover:text-muted-foreground',
-														day_today:
-															'bg-accent text-accent-foreground',
 													}}
 												/>
 											</PopoverContent>
