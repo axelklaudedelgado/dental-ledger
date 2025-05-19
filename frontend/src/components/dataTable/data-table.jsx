@@ -32,7 +32,13 @@ import { Spinner } from '../ui/extensions/spinner'
 
 import OverflowTooltip from '../ui/extensions/overflow-tooltip'
 
-export function DataTable({ columns, data, isLoading, error, type = null }) {
+export default function DataTable({
+	columns,
+	data,
+	isLoading,
+	error,
+	type = null,
+}) {
 	const navigate = useNavigate()
 
 	const initialSorting =

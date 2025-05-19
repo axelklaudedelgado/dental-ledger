@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Spinner } from '../ui/extensions/spinner'
+import { lazy, Suspense } from 'react'
+import { Skeleton } from '../ui/skeleton'
+import { Card } from '@/components/ui/card'
+const DataTable = lazy(() => import('../dataTable/data-table'))
 
 export const TransactionDesktopTable = ({
 	data,
@@ -7,31 +9,30 @@ export const TransactionDesktopTable = ({
 	error,
 	columns,
 	type,
-}) => {
-	const [DataTable, setDataTable] = useState(null)
-	const [isLoading, setIsLoading] = useState(true)
+}) => (
+	<Suspense
+		fallback={
+			<div className="space-y-3 py-4">
+				<Card className="p-4">
+					<div className="flex justify-between items-center">
+						<Skeleton className="h-10 w-72" />
+						<div className="flex gap-2">
+							<Skeleton className="h-10 w-20" />
+							<Skeleton className="h-10 w-36" />
+						</div>
+					</div>
+				</Card>
 
-	useEffect(() => {
-		import('../dataTable/data-table')
-			.then((module) => {
-				setDataTable(() => module.DataTable)
-				setIsLoading(false)
-			})
-			.catch((error) => {
-				console.error('Failed to load DataTable:', error)
-				setIsLoading(false)
-			})
-	}, [])
-
-	if (isLoading) {
-		return <Spinner size="small">Loading data...</Spinner>
-	}
-
-	if (!DataTable) {
-		return <div>Could not load data table component.</div>
-	}
-
-	return (
+				<Card className="p-4 space-y-3">
+					<Skeleton className="h-10 w-full" />
+					<Skeleton className="h-10 w-full" />
+					<Skeleton className="h-10 w-full" />
+					<Skeleton className="h-10 w-full" />
+					<Skeleton className="h-10 w-full" />
+				</Card>
+			</div>
+		}
+	>
 		<DataTable
 			columns={columns}
 			data={data}
@@ -39,5 +40,5 @@ export const TransactionDesktopTable = ({
 			error={status === 'failed' ? error : null}
 			type={type}
 		/>
-	)
-}
+	</Suspense>
+)
